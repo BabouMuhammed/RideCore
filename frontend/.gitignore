@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+dist/
+coverage/
+.verification/
+android/
+ios/
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
