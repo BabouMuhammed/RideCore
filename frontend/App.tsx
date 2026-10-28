@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AppProviders } from './src/application/AppProviders';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { colors } from './src/theme/tokens';
+import { PublicEntry } from './src/application/PublicEntry';
 
 // Keep the native launch surface until the first real application layout exists.
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -15,9 +16,11 @@ export default function App() {
 
   return (
     <View testID="application-root" style={styles.root} onLayout={onLayout}>
-      <AppProviders>
-        <RootNavigator />
-      </AppProviders>
+      <PublicEntry>
+        <AppProviders>
+          <RootNavigator />
+        </AppProviders>
+      </PublicEntry>
     </View>
   );
 }

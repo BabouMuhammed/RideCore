@@ -1,4 +1,9 @@
-import { render, screen, userEvent } from '@testing-library/react-native';
+import {
+  render,
+  screen,
+  userEvent,
+  fireEvent,
+} from '@testing-library/react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -6,6 +11,19 @@ import { SessionProvider } from '../src/features/session/SessionProvider';
 import { RootNavigator } from '../src/navigation/RootNavigator';
 import { harness, rider, national, activeRide } from './fixtures';
 import { AppError } from '../src/services/errors';
+jest.mock('../src/services/journey-api', () => ({
+  ...jest.requireActual('../src/services/journey-api'),
+  createJourneyApi: () => {
+    const { journeyApi, tripFixture } =
+      jest.requireActual('./journey-fixtures');
+    const api = journeyApi();
+    api.detail.mockImplementation(async (_token: string, id: string) => ({
+      ...tripFixture,
+      _id: id,
+    }));
+    return api;
+  },
+}));
 // Use RNTL's supported timer driver for realistic presses/typing without wall-clock delays.
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
@@ -46,7 +64,7 @@ test('registration submits exact fields and confirms creation without authentica
     ['Phone number', national],
     ['Password', 'test-only-password'],
   ])
-    await user.type(screen.getByLabelText(label!), value!);
+    await fireEvent.changeText(screen.getByLabelText(label!), value!);
   await user.press(screen.getByRole('button', { name: 'Create account' }));
   expect(
     await screen.findByRole('header', { name: 'Account created' }),
@@ -87,15 +105,16 @@ test.each(['email', 'phone'] as const)(
     await signInForm(h);
     if (mode === 'phone')
       await user.press(screen.getByRole('radio', { name: 'Use phone number' }));
-    await user.type(
+    await fireEvent.changeText(
       screen.getByLabelText(mode === 'email' ? 'Email' : 'Phone number'),
       mode === 'email' ? 'RIDER@example.test' : national,
     );
-    await user.type(screen.getByLabelText('Password'), 'test-only-password');
+    await fireEvent.changeText(
+      screen.getByLabelText('Password'),
+      'test-only-password',
+    );
     await user.press(screen.getByRole('button', { name: 'Sign in' }));
-    expect(
-      await screen.findByText('Your journey starts here'),
-    ).toBeOnTheScreen();
+    expect(await screen.findByText('Where to?')).toBeOnTheScreen();
     expect(h.api.login).toHaveBeenCalledWith(
       mode === 'email'
         ? { email: rider.email, password: 'test-only-password' }
@@ -109,8 +128,11 @@ test('incorrect credentials remain safe inline feedback', async () => {
   h.api.login.mockRejectedValue(new AppError('credentials'));
   const user = interactions();
   await signInForm(h);
-  await user.type(screen.getByLabelText('Email'), rider.email);
-  await user.type(screen.getByLabelText('Password'), 'test-only-password');
+  await fireEvent.changeText(screen.getByLabelText('Email'), rider.email);
+  await fireEvent.changeText(
+    screen.getByLabelText('Password'),
+    'test-only-password',
+  );
   await user.press(screen.getByRole('button', { name: 'Sign in' }));
   expect(
     await screen.findByText(
@@ -142,17 +164,13 @@ test('network restoration provides retry without deleting the credential', async
   ).toBeOnTheScreen();
   expect(h.saved()).toBe('credential');
   await user.press(screen.getByRole('button', { name: 'Try again' }));
-  expect(await screen.findByText('Your journey starts here')).toBeOnTheScreen();
+  expect(await screen.findByText('Where to?')).toBeOnTheScreen();
 });
-test('restored active ride is retained without map or driver lifecycle actions', async () => {
+test('restored active ride enters the real requested state without driver lifecycle actions', async () => {
   const h = harness('credential');
   h.api.rides.mockResolvedValue([activeRide]);
   await render(testApp(h));
-  expect(
-    await screen.findByText(
-      'Your active ride has been restored. Live trip screens will be available in a later update.',
-    ),
-  ).toBeOnTheScreen();
+  expect(await screen.findByText('Connecting to a driver')).toBeOnTheScreen();
   expect(h.controller.getSnapshot()).toMatchObject({ activeRide });
 });
 test('a driver account gets a clear role rejection instead of rider tabs', async () => {
@@ -160,14 +178,14 @@ test('a driver account gets a clear role rejection instead of rider tabs', async
   h.api.me.mockResolvedValue({ ...rider, role: 'driver' });
   await render(testApp(h));
   expect(await screen.findByText('Rider account required')).toBeOnTheScreen();
-  expect(screen.queryByText('Your journey starts here')).not.toBeOnTheScreen();
+  expect(screen.queryByText('Where to?')).not.toBeOnTheScreen();
 });
 
 test('account opens authenticated phone verification and logout returns to authentication', async () => {
   const h = harness('credential');
   const user = interactions();
   await render(testApp(h));
-  await screen.findByText('Your journey starts here');
+  await screen.findByText('Where to?');
   await user.press(screen.getByRole('tab', { name: /Account/ }));
   await user.press(
     await screen.findByRole('button', { name: /Verify phone number/ }),

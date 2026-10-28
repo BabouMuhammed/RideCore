@@ -5,19 +5,22 @@ import { RiderNavigator } from './RiderNavigator';
 import { BootstrapScreen } from '../features/session/BootstrapScreen';
 import { useSession } from '../features/session/SessionProvider';
 import { PhoneVerificationScreen } from '../features/auth/screens/PhoneVerificationScreen';
+import { JourneyProvider } from '../features/journey/JourneyProvider';
 const Stack = createNativeStackNavigator<RootStackParams>();
 const RiderStack = createNativeStackNavigator<RiderStackParams>();
 function AuthenticatedNavigator() {
   return (
-    <RiderStack.Navigator
-      screenOptions={{ headerShown: false, animation: 'none' }}
-    >
-      <RiderStack.Screen name="Tabs" component={RiderNavigator} />
-      <RiderStack.Screen
-        name="PhoneVerification"
-        component={PhoneVerificationScreen}
-      />
-    </RiderStack.Navigator>
+    <JourneyProvider>
+      <RiderStack.Navigator
+        screenOptions={{ headerShown: false, animation: 'none' }}
+      >
+        <RiderStack.Screen name="Tabs" component={RiderNavigator} />
+        <RiderStack.Screen
+          name="PhoneVerification"
+          component={PhoneVerificationScreen}
+        />
+      </RiderStack.Navigator>
+    </JourneyProvider>
   );
 }
 export function RootNavigator() {

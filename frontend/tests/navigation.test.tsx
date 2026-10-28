@@ -11,7 +11,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import App from '../App';
 import * as SplashScreen from 'expo-splash-screen';
-import { RiderNavigator } from '../src/navigation/RiderNavigator';
+import { RootNavigator } from '../src/navigation/RootNavigator';
+jest.mock('../src/services/journey-api', () => ({
+  ...jest.requireActual('../src/services/journey-api'),
+  createJourneyApi: () => jest.requireActual('./journey-fixtures').journeyApi(),
+}));
 
 test('launch shows the real entry flow without an authenticated bypass', async () => {
   await render(<App />);
@@ -50,25 +54,27 @@ test('registration has its own route and collects only the required fields', asy
   expect(screen.getByLabelText('First name')).toBeOnTheScreen();
   expect(screen.getByLabelText('Last name')).toBeOnTheScreen();
 });
-test('the future rider shell connects Home, Activity and Account', async () => {
+test('the authenticated rider shell connects real Home, Activity and Account', async () => {
   const user = userEvent.setup();
   // Direct component mounting validates structure; no user-facing bypass exists.
   await render(
     <SafeAreaProvider>
-      <SessionProvider controller={harness().controller}>
+      <SessionProvider controller={harness('credential').controller}>
         <NavigationContainer>
-          <RiderNavigator />
+          <RootNavigator />
         </NavigationContainer>
       </SessionProvider>
     </SafeAreaProvider>,
   );
-  expect(screen.getByText('Your journey starts here')).toBeOnTheScreen();
+  expect(await screen.findByText('Where to?')).toBeOnTheScreen();
   await user.press(
     screen.getByRole(Platform.OS === 'ios' ? 'button' : 'tab', {
       name: /Activity/,
     }),
   );
-  expect(await screen.findByText('Your rides, in one place')).toBeOnTheScreen();
+  expect(
+    await screen.findByText('Your recent rides, as recorded by RideCore.'),
+  ).toBeOnTheScreen();
   await user.press(
     screen.getByRole(Platform.OS === 'ios' ? 'button' : 'tab', {
       name: /Account/,
