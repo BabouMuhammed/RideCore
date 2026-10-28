@@ -41,6 +41,15 @@ const config: ExpoConfig = {
       },
     ],
     '@rnmapbox/maps',
+    [
+      'expo-location',
+      {
+        locationWhenInUsePermission:
+          'RideCore uses your location to help you choose your pickup point.',
+        isAndroidBackgroundLocationEnabled: false,
+        isAndroidForegroundServiceEnabled: false,
+      },
+    ],
   ],
 };
 

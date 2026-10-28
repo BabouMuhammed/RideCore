@@ -9,12 +9,12 @@ import type {
 import { rideStatuses } from './contracts';
 import { AppError } from './errors';
 type RecordValue = Record<string, unknown>;
-function record(value: unknown): RecordValue {
+export function record(value: unknown): RecordValue {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new AppError('contract');
   return value as RecordValue;
 }
-function text(value: unknown): string {
+export function text(value: unknown): string {
   if (typeof value !== 'string' || !value) throw new AppError('contract');
   return value;
 }
@@ -36,7 +36,7 @@ function user(value: unknown): User {
     phoneVerifiedAt: v.phoneVerifiedAt,
   };
 }
-function ride(value: unknown): Ride {
+export function ride(value: unknown): Ride {
   const v = record(value);
   if (
     !rideStatuses.includes(v.status as Ride['status']) ||
@@ -54,10 +54,10 @@ export type ApiFetch = (
   url: string,
   options?: RequestInit,
 ) => Promise<Response>;
-export function createApi(
+export function createTransport(
   baseUrl = process.env.EXPO_PUBLIC_API_URL,
   fetcher: ApiFetch = (url, options) => fetch(url, options),
-): RiderApi {
+) {
   async function call(
     path: string,
     method: string,
@@ -132,6 +132,9 @@ export function createApi(
             Number.isFinite(seconds) ? seconds : undefined,
           );
         if (response.status >= 500) throw new AppError('server');
+        if (response.status === 404) throw new AppError('unavailable');
+        if (response.status === 409 && !path.startsWith('/auth/'))
+          throw new AppError('changed');
         if (path === '/auth/otp/verify') throw new AppError('otp');
         if (response.status === 403) throw new AppError('role');
         if (response.status === 409 && path === '/auth/register')
@@ -153,6 +156,13 @@ export function createApi(
       signal?.removeEventListener('abort', cancel);
     }
   }
+  return call;
+}
+export function createApi(
+  baseUrl = process.env.EXPO_PUBLIC_API_URL,
+  fetcher?: ApiFetch,
+): RiderApi {
+  const call = createTransport(baseUrl, fetcher);
   return {
     register: async (input: Registration, signal) =>
       user(await call('/auth/register', 'POST', input, undefined, signal)),

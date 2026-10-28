@@ -1,4 +1,6 @@
 export type ErrorKind =
+  | 'unavailable'
+  | 'changed'
   | 'conflict'
   | 'credentials'
   | 'validation'
@@ -14,6 +16,10 @@ export type ErrorKind =
   | 'configuration'
   | 'cancelled';
 const messages: Record<ErrorKind, string> = {
+  unavailable:
+    'This information is no longer available. Refresh to see the latest status.',
+  changed:
+    'This action is no longer available or was already processed. Refresh to see the latest status.',
   conflict: 'An account with these details may already exist. Try signing in.',
   credentials: 'The email or phone number and password do not match.',
   validation: 'Check your details and try again.',
