@@ -236,17 +236,15 @@ test('share URLs use a bearer fragment; revocation stays available even if no lo
 });
 test('an uncertain payment response recovers the server record rather than claiming failure or paying again', async () => {
   const h = fixture();
-  h.api.payment
-    .mockResolvedValueOnce(null)
-    .mockResolvedValueOnce({
-      _id: 'c'.repeat(24),
-      ride: trip._id,
-      method: 'cash',
-      amount: 125,
-      currency: 'GMD',
-      status: 'paid',
-      paidAt: trip.requestedAt,
-    });
+  h.api.payment.mockResolvedValueOnce(null).mockResolvedValueOnce({
+    _id: 'c'.repeat(24),
+    ride: trip._id,
+    method: 'cash',
+    amount: 125,
+    currency: 'GMD',
+    status: 'paid',
+    paidAt: trip.requestedAt,
+  });
   h.api.pay.mockRejectedValueOnce(new AppError('network'));
   await mount(
     h,

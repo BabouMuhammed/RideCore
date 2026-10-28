@@ -1,5 +1,15 @@
-# Feature boundaries
+# Rider feature boundaries
 
-Authentication and session restoration are implemented in Phase 2. Home/Activity remain structural; Account contains only identity, optional phone verification and local sign-out needed by authentication.
+- auth/session: existing password auth, Gambia numbers, optional mock OTP and
+  server-validated startup/local logout.
+- map: native Mapbox, PC web adapter, foreground permission, address/landmark
+  search, current-location selection and pins.
+- journey: authoritative controller/provider, state labels, contextual cancellation.
+- home: persistent map and state-dependent booking/active/completion sheet.
+- sharing: share/revoke and a separate unauthenticated recipient branch.
+- receipt: completed-trip simulated payments and ratings.
+- activity: actual latest history/detail and receipt recovery.
+- account: real identity, optional verification and local logout only.
 
-The server is authoritative for role, account status and ride state. The session controller fetches and retains the real active ride without presenting a map, simulating progression or calling driver lifecycle endpoints. Booking, map/location, realtime, sharing, payments and ratings require their approved later phases.
+States are reached through authentication, actions, links and backend responses.
+There is no gallery, screen selector, fake driver or synthetic ride progression.
