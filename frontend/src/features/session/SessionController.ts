@@ -202,6 +202,12 @@ export class SessionController {
   }
   requestOtp = (): Promise<OtpReply> =>
     this.authorized((token, signal) => this.api.requestOtp(token, signal));
+  // Integration adapters run with the validated session, never persisted copies.
+  run<T>(
+    operation: (token: string, signal: AbortSignal) => Promise<T>,
+  ): Promise<T> {
+    return this.authorized(operation);
+  }
   async verifyOtp(code: string) {
     if (!/^\d{6}$/.test(code)) throw new AppError('otp');
     await this.authorized(async (token, signal) => {
