@@ -9,6 +9,7 @@ import UserRound from 'lucide-react-native/icons/user-round';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import AlertCircle from 'lucide-react-native/icons/circle-alert';
 import type { LucideIcon } from 'lucide-react-native';
+import { Platform } from 'react-native';
 import { colors, size as sizes } from '../../theme/tokens';
 const icons = {
   eye: Eye,
@@ -34,6 +35,13 @@ export function Icon({
 }) {
   const Glyph = icons[name];
   return (
-    <Glyph color={color} size={size} strokeWidth={1.8} accessible={false} />
+    <Glyph
+      color={color}
+      size={size}
+      strokeWidth={1.8}
+      {...(Platform.OS === 'web'
+        ? { 'aria-hidden': true }
+        : { accessible: false })}
+    />
   );
 }

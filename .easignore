@@ -1,0 +1,19 @@
+# EAS reads ignore rules from the Git root for this mobile/backend repository.
+# Preserve local dependency, credential, generated-native and artifact exclusions.
+.git/
+**/node_modules/
+**/.env
+**/.env.*
+!**/.env.example
+**/*.jks
+**/*.keystore
+**/credentials.json
+**/.expo/
+**/.cache/
+**/coverage/
+**/dist/
+/frontend/android/
+/frontend/ios/
+/frontend/.verification/
+# The rider native build never needs server code or the server environment.
+/backend/
