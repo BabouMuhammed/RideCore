@@ -32,9 +32,14 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
           style: 'mapbox://styles/mapbox/light-v11',
           center: initial.current,
           zoom: 13,
-          attributionControl: true,
+          attributionControl: false,
+          logoPosition: 'top-right',
         });
         map.current = instance;
+        instance.addControl(
+          new mapboxgl.AttributionControl({ compact: true }),
+          'top-right',
+        );
         instance.on('load', () => setReady(true));
         instance.on('click', (event) =>
           select.current?.([event.lngLat.lng, event.lngLat.lat]),

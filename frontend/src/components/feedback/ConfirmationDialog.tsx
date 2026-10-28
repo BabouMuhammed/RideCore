@@ -3,6 +3,7 @@ import {
   AccessibilityInfo,
   findNodeHandle,
   Modal,
+  Platform,
   StyleSheet,
   View,
 } from 'react-native';
@@ -44,6 +45,7 @@ export function ConfirmationDialog({
   }, [pending]);
   return (
     <Modal
+      testID="confirmation-dialog"
       visible={visible}
       transparent
       animationType="none"
@@ -51,6 +53,10 @@ export function ConfirmationDialog({
         if (!pending) onCancel();
       }}
       onShow={() => {
+        if (Platform.OS === 'web') {
+          heading.current?.focus();
+          return;
+        }
         const node = findNodeHandle(heading.current);
         if (node) AccessibilityInfo.setAccessibilityFocus(node);
       }}
@@ -59,6 +65,7 @@ export function ConfirmationDialog({
         <View accessibilityViewIsModal style={styles.dialog}>
           <View
             ref={heading}
+            {...(Platform.OS === 'web' ? { tabIndex: -1 as const } : {})}
             accessible
             accessibilityRole="header"
             accessibilityLabel={title}

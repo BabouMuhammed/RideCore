@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Mapbox from '@rnmapbox/maps';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { mapToken } from '../../services/mapbox';
 import { Text } from '../../components/ui/Text';
 import { Button } from '../../components/ui/Button';
@@ -9,6 +10,7 @@ import type { MapCanvasProps } from './MapCanvas.types';
 
 export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
   const token = mapToken();
+  const insets = useSafeAreaInsets();
   const [failed, setFailed] = useState(false);
   const [configured, setConfigured] = useState<string>();
   const camera = useRef<Mapbox.Camera>(null);
@@ -71,6 +73,10 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
     <Mapbox.MapView
       style={StyleSheet.absoluteFill}
       styleURL={Mapbox.StyleURL.Light}
+      logoEnabled
+      attributionEnabled
+      logoPosition={{ top: insets.top + 20, right: 52 }}
+      attributionPosition={{ top: insets.top + 20, right: 16 }}
       onMapLoadingError={() => setFailed(true)}
       onPress={(event) => {
         if (onSelect && event.geometry.type === 'Point')
