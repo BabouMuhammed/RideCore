@@ -40,6 +40,7 @@ export function Receipt({
       if (mounted.current) {
         setPayment(value);
         setLoaded(true);
+        setError(undefined);
       }
     } catch (error) {
       if (mounted.current) setError(safeError(error).message);

@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { io } from 'socket.io-client';
 import {
   createJourneyApi,
+  coordinate,
   type PublicSnapshot,
 } from '../../services/journey-api';
 import { socketOrigin } from '../../services/realtime';
@@ -67,13 +68,45 @@ export function PublicShareViewer({ token }: { token: string }) {
       void refresh();
     });
     socket.on('share:ended', end);
-    // REST validates every update. No unvalidated public socket payload enters UI.
+    // Lifecycle hints reconcile through REST. Validated, server-authorized public
+    // location broadcasts update locally without an HTTP request for every GPS tick.
     socket.on('share:ride-status', () => {
       void refresh();
     });
-    socket.on('share:location', () => {
-      void refresh();
-    });
+    socket.on(
+      'share:location',
+      (sample: {
+        longitude?: number;
+        latitude?: number;
+        updatedAt?: string;
+      }) => {
+        if (
+          dead ||
+          abort.signal.aborted ||
+          !expiresAt ||
+          expiresAt <= Date.now() ||
+          typeof sample?.updatedAt !== 'string' ||
+          !Number.isFinite(Date.parse(sample.updatedAt))
+        )
+          return;
+        try {
+          const [longitude, latitude] = coordinate([
+            sample.longitude,
+            sample.latitude,
+          ]);
+          const updatedAt = sample.updatedAt;
+          setSnapshot((value) =>
+            value &&
+            (!value.location ||
+              Date.parse(updatedAt) > Date.parse(value.location.updatedAt))
+              ? { ...value, location: { longitude, latitude, updatedAt } }
+              : value,
+          );
+        } catch {
+          /* Ignore malformed samples; REST polling remains authoritative. */
+        }
+      },
+    );
     socket.on('connect_error', () => {
       void refresh();
     });

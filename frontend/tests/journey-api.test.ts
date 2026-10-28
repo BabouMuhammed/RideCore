@@ -147,3 +147,20 @@ test('coordinate and snapshot validation reject invalid public samples', () => {
   expect(() => coordinate([0, 100])).toThrow();
   expect(() => publicSnapshot({ rideStatus: 'completed' })).toThrow();
 });
+test('rider availability uses the actual nearby endpoint without exposing coordinates as UI fields', async () => {
+  const h = adapter([
+    { vehicle: { vehicleType: 'economy' } },
+    { vehicle: { vehicleType: 'comfort' } },
+  ]);
+  expect(await h.api.nearby('credential', [-16.5, 13.4])).toEqual([
+    'economy',
+    'comfort',
+  ]);
+  const url = new URL(h.fetcher.mock.calls[0]![0]);
+  expect(url.pathname).toBe('/api/drivers/nearby');
+  expect(url.searchParams.get('lat')).toBe('13.4');
+  expect(url.searchParams.get('lng')).toBe('-16.5');
+  await expect(h.api.nearby('credential', [200, 0])).rejects.toMatchObject({
+    kind: 'contract',
+  });
+});

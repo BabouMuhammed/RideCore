@@ -15,6 +15,7 @@ export type JourneyState = {
   connected: boolean;
   error: AppError | null;
   location: LocationSample | null;
+  nearbyDrivers: number | null;
 };
 export class JourneyController {
   private state: JourneyState = {
@@ -25,6 +26,7 @@ export class JourneyController {
     connected: false,
     error: null,
     location: null,
+    nearbyDrivers: null,
   };
   private listeners = new Set<() => void>();
   private stopped = false;
@@ -33,6 +35,7 @@ export class JourneyController {
   private watchingId: string | null = null;
   private cleanup?: () => void;
   private refreshing?: Promise<void>;
+  private checkingNearby = false;
   constructor(
     readonly api: JourneyApi,
     readonly run: Runner,
@@ -58,11 +61,43 @@ export class JourneyController {
     this.stopped = true;
     this.revision++;
     this.cleanup?.();
-    this.state = { ...this.state, trip: null, history: [], location: null };
+    this.state = {
+      ...this.state,
+      trip: null,
+      history: [],
+      location: null,
+      nearbyDrivers: null,
+    };
   }
   private own(trip: Trip) {
     if (trip.rider !== this.riderId) throw new AppError('contract');
     return trip;
+  }
+  private async checkDrivers(trip: Trip) {
+    if (this.checkingNearby || this.stopped) return;
+    this.checkingNearby = true;
+    const revision = this.revision;
+    try {
+      const categories = await this.run((token, signal) =>
+        this.api.nearby(token, trip.pickup.location.coordinates, signal),
+      );
+      if (
+        revision === this.revision &&
+        this.state.trip?._id === trip._id &&
+        this.state.trip.status === 'requested'
+      )
+        this.emit({
+          nearbyDrivers: categories.filter(
+            (category) => category === trip.vehicleType,
+          ).length,
+        });
+    } catch {
+      // Discovery failure is unknown availability, never a false no-driver result.
+      if (revision === this.revision && this.state.trip?._id === trip._id)
+        this.emit({ nearbyDrivers: null });
+    } finally {
+      this.checkingNearby = false;
+    }
   }
   private async adopt(trip: Trip | null) {
     if (this.stopped) return;
@@ -71,9 +106,14 @@ export class JourneyController {
     const changed = this.state.trip?._id !== trip?._id;
     this.emit({
       trip,
+      nearbyDrivers:
+        changed || trip?.status !== 'requested'
+          ? null
+          : this.state.nearbyDrivers,
       location:
         changed || !trip || !isActive(trip) ? null : this.state.location,
     });
+    if (trip?.status === 'requested') void this.checkDrivers(trip);
     if (trip?.trackingLocation && isActive(trip) && !this.state.location)
       this.emit({
         location: {

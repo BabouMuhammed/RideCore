@@ -33,6 +33,7 @@ export function SharePanel({ trip, onClose }: { trip: Trip; onClose(): void }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState<string>();
   const [now, setNow] = useState(() => Date.now());
+  const [notice, setNotice] = useState<string>();
   const lock = useRef(false),
     mounted = useRef(true);
   useEffect(() => {
@@ -48,12 +49,16 @@ export function SharePanel({ trip, onClose }: { trip: Trip; onClose(): void }) {
     lock.current = true;
     setBusy(true);
     setError(undefined);
+    setNotice(undefined);
     try {
       if (revoke) {
         await controller.run((token, signal) =>
           controller.api.revoke(token, trip._id, signal),
         );
-        if (mounted.current) setGrant(null);
+        if (mounted.current) {
+          setGrant(null);
+          setNotice('Sharing has been stopped for this ride.');
+        }
       } else {
         const grant = await controller.run((token, signal) =>
           controller.api.share(token, trip._id, signal),
@@ -111,8 +116,7 @@ export function SharePanel({ trip, onClose }: { trip: Trip; onClose(): void }) {
       )}
       {!recipientUrl('configuration-check') && (
         <Text>
-          Trip link sharing is unavailable until the recipient viewer is
-          configured.
+          Trip link sharing is currently unavailable. Please try again later.
         </Text>
       )}
       <Text variant="caption" tone="secondary">
@@ -130,6 +134,7 @@ export function SharePanel({ trip, onClose }: { trip: Trip; onClose(): void }) {
           {error}
         </Text>
       )}
+      {notice && <Text accessibilityLiveRegion="polite">{notice}</Text>}
       <Button
         label="Back to trip"
         variant="secondary"

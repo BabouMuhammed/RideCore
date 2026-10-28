@@ -108,3 +108,30 @@ test('public network failure shows retry without exposing a token or backend err
   ).toBeOnTheScreen();
   expect(screen.queryByText('s'.repeat(43))).not.toBeOnTheScreen();
 });
+test('public GPS updates are validated and do not issue a REST request for every sample', async () => {
+  const api = { snapshot: jest.fn().mockResolvedValue(snapshot) };
+  jest
+    .mocked(createJourneyApi)
+    .mockReturnValue(api as unknown as ReturnType<typeof createJourneyApi>);
+  await mount();
+  await screen.findByText('Pickup · Synthetic pickup');
+  const socket = jest.mocked(io).mock.results[0]!.value as unknown as {
+    handlers: Map<string, (sample: unknown) => void>;
+  };
+  await act(() =>
+    socket.handlers.get('share:location')!({
+      longitude: -16.5,
+      latitude: 13.4,
+      updatedAt: '2026-10-28T12:00:00Z',
+    }),
+  );
+  expect(screen.getByText(/Last driver update:/)).toBeOnTheScreen();
+  await act(() =>
+    socket.handlers.get('share:location')!({
+      longitude: 0,
+      latitude: 100,
+      updatedAt: '2026-10-28T12:01:00Z',
+    }),
+  );
+  expect(api.snapshot).toHaveBeenCalledTimes(1);
+});

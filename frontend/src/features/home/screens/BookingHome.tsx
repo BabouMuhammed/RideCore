@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../../components/ui/Text';
 import { Button } from '../../../components/ui/Button';
 import { ListRow } from '../../../components/ui/ListRow';
+import { Loading } from '../../../components/ui/Loading';
 import { JourneySheet } from '../../../components/sheets/JourneySheet';
 import { MapCanvas } from '../../map/MapCanvas';
 import { AddressPicker } from '../../map/AddressPicker';
@@ -120,11 +121,11 @@ export function BookingHome() {
       ...(driverPoint && trip && isActive(trip)
         ? [{ id: 'driver', point: driverPoint, label: 'Driver' }]
         : []),
-      ...(pin && selecting
+      ...(pin && selecting && !trip && !state.loading
         ? [{ id: 'selected', point: pin, label: 'Selected' }]
         : []),
     ],
-    [from, to, driverPoint, trip, pin, selecting],
+    [from, to, driverPoint, trip, pin, selecting, state.loading],
   );
   async function estimate() {
     if (!pickup || !destination || operation.current) return;
@@ -183,7 +184,7 @@ export function BookingHome() {
         center={pin ?? from?.location.coordinates ?? initialCenter}
         pins={pins}
         route={route}
-        onSelect={selecting ? setPin : undefined}
+        onSelect={selecting && !trip && !state.loading ? setPin : undefined}
       />
       <View style={[styles.brand, { top: insets.top + 12 }]}>
         <Text variant="heading" style={{ color: colors.brand }}>
@@ -191,7 +192,9 @@ export function BookingHome() {
         </Text>
       </View>
       <JourneySheet>
-        {selecting ? (
+        {state.loading ? (
+          <Loading label="Restoring your journey" />
+        ) : selecting && !trip ? (
           <AddressPicker
             key={selecting}
             kind={selecting}
@@ -228,6 +231,19 @@ export function BookingHome() {
                 Your request is open to eligible nearby drivers. No driver has
                 accepted yet. If nobody accepts, you can keep waiting or cancel.
               </Text>
+            )}
+            {trip.status === 'requested' && state.nearbyDrivers === 0 && (
+              <>
+                <Text>
+                  No available drivers for this category were found nearby at
+                  the last check. Your request remains open.
+                </Text>
+                <Button
+                  label="Check for drivers"
+                  variant="secondary"
+                  onPress={() => void controller.refresh()}
+                />
+              </>
             )}
             {trip.driverDetails && (
               <Text variant="label">
@@ -296,6 +312,8 @@ export function BookingHome() {
                   setDestination(null);
                   setEstimates({});
                   setContext(null);
+                  setSelecting(null);
+                  setPin(null);
                 }}
               />
             )}
@@ -334,9 +352,8 @@ export function BookingHome() {
             )}
             {!!estimates[category] && (
               <Text variant="caption" tone="secondary">
-                Fare estimates use the backend’s straight-line distance tariff.
-                The street route is for orientation; no driver arrival time is
-                promised.
+                Fare estimates use straight-line distance. The street route is
+                shown for orientation.
               </Text>
             )}
             {confirm ? (

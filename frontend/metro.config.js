@@ -1,2 +1,8 @@
 const { getDefaultConfig } = require('expo/metro-config');
-module.exports = getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname);
+const defaults = config.resolver.blockList;
+config.resolver.blockList = [
+  ...(Array.isArray(defaults) ? defaults : defaults ? [defaults] : []),
+  /[/\\]\.verification[/\\]/,
+];
+module.exports = config;

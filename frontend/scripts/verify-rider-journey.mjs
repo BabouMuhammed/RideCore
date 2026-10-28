@@ -242,6 +242,10 @@ try {
     },
   );
   await check('all three estimates use actual backend GMD fare', async () => {
+    const nearby = await run((token, signal) =>
+      rides.nearby(token, input.pickup.location.coordinates, signal),
+    );
+    assert.ok(nearby.includes('economy'));
     for (const vehicleType of ['economy', 'comfort', 'xl']) {
       const estimate = await run((token, signal) =>
         rides.estimate(token, { ...input, vehicleType }, signal),
@@ -514,6 +518,8 @@ try {
     async () => {
       journey.dismiss();
       const next = await journey.request(input);
+      await until(() => journey.getSnapshot().nearbyDrivers !== null);
+      assert.equal(journey.getSnapshot().nearbyDrivers, 0);
       journey.dispose();
       await session.logout();
       assert.equal(saved, null);

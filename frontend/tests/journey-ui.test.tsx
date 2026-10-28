@@ -17,8 +17,10 @@ import { BookingHome } from '../src/features/home/screens/BookingHome';
 import { Receipt } from '../src/features/receipt/Receipt';
 import { SharePanel, recipientUrl } from '../src/features/sharing/SharePanel';
 import { AddressPicker } from '../src/features/map/AddressPicker';
-import { harness, rider } from './fixtures';
+import { harness, rider, deferred } from './fixtures';
+import type { Trip } from '../src/services/journey-api';
 import { journeyApi, tripFixture as trip } from './journey-fixtures';
+import { AppError } from '../src/services/errors';
 jest.mock('../src/services/mapbox', () => ({
   ...jest.requireActual('../src/services/mapbox'),
   createMapService: () => {
@@ -228,6 +230,41 @@ test('share URLs use a bearer fragment; revocation stays available even if no lo
       expect.any(AbortSignal),
     ),
   );
+  expect(
+    await screen.findByText('Sharing has been stopped for this ride.'),
+  ).toBeOnTheScreen();
+});
+test('an uncertain payment response recovers the server record rather than claiming failure or paying again', async () => {
+  const h = fixture();
+  h.api.payment
+    .mockResolvedValueOnce(null)
+    .mockResolvedValueOnce({
+      _id: 'c'.repeat(24),
+      ride: trip._id,
+      method: 'cash',
+      amount: 125,
+      currency: 'GMD',
+      status: 'paid',
+      paidAt: trip.requestedAt,
+    });
+  h.api.pay.mockRejectedValueOnce(new AppError('network'));
+  await mount(
+    h,
+    <Receipt
+      trip={{ ...trip, status: 'completed', finalFare: 125 }}
+      onUpdated={jest.fn()}
+    />,
+  );
+  await fireEvent.press(
+    await screen.findByRole('button', { name: 'Record simulated payment' }),
+  );
+  expect(await screen.findByText(/Payment recorded/)).toBeOnTheScreen();
+  expect(
+    screen.queryByText(
+      'Unable to connect. Check your connection and try again.',
+    ),
+  ).not.toBeOnTheScreen();
+  expect(h.api.pay).toHaveBeenCalledTimes(1);
 });
 test('late completed state replaces active sheet without offering active-only actions', async () => {
   const h = fixture();
@@ -247,5 +284,33 @@ test('late completed state replaces active sheet without offering active-only ac
   ).not.toBeOnTheScreen();
   expect(
     screen.queryByRole('button', { name: 'Safety and sharing' }),
+  ).not.toBeOnTheScreen();
+});
+test('journey bootstrap shows loading instead of offering booking before active-ride discovery', async () => {
+  const h = fixture(),
+    gate = deferred<Trip[]>();
+  h.api.list.mockReturnValue(gate.promise);
+  await mount(h, <BookingHome />);
+  expect(await screen.findByText('Restoring your journey')).toBeOnTheScreen();
+  expect(
+    screen.queryByRole('button', { name: 'See fares' }),
+  ).not.toBeOnTheScreen();
+  await act(async () => {
+    gate.resolve([trip]);
+    await h.controller.refresh();
+  });
+  expect(await screen.findByText('Connecting to a driver')).toBeOnTheScreen();
+});
+test('authoritative active-ride reconciliation supersedes an open address-selection sheet', async () => {
+  const h = fixture();
+  await mount(h, <BookingHome />);
+  await waitFor(() => expect(h.controller.getSnapshot().loading).toBe(false));
+  await fireEvent.press(screen.getByRole('button', { name: /^Pickup,/ }));
+  expect(screen.getByLabelText('Search address or landmark')).toBeOnTheScreen();
+  h.api.list.mockResolvedValue([trip]);
+  await act(() => h.controller.refresh());
+  expect(await screen.findByText('Connecting to a driver')).toBeOnTheScreen();
+  expect(
+    screen.queryByLabelText('Search address or landmark'),
   ).not.toBeOnTheScreen();
 });

@@ -143,3 +143,16 @@ test('disposal drops late private state and closes socket work', async () => {
   expect(h.controller.getSnapshot().trip).toBeNull();
   expect(h.watch).not.toHaveBeenCalled();
 });
+test('no-driver feedback uses only the backend category snapshot and leaves the request unassigned', async () => {
+  const h = harness();
+  h.api.list.mockResolvedValue([trip]);
+  h.api.nearby.mockResolvedValue(['comfort']);
+  await h.controller.refresh();
+  await Promise.resolve();
+  expect(h.controller.getSnapshot().nearbyDrivers).toBe(0);
+  expect(h.controller.getSnapshot().trip?.status).toBe('requested');
+  h.api.nearby.mockRejectedValue(new AppError('network'));
+  await h.controller.refresh();
+  await Promise.resolve();
+  expect(h.controller.getSnapshot().nearbyDrivers).toBeNull();
+});

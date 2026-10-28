@@ -107,7 +107,7 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
         <View style={{ padding: 24, paddingTop: 80 }}>
           <Text>
             {!token
-              ? 'Street map is unavailable. Check the map configuration.'
+              ? 'Street map is unavailable. Please try again later.'
               : 'The map could not load. Check your connection.'}
           </Text>
         </View>

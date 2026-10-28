@@ -189,6 +189,31 @@ export function createJourneyApi(
     return v as unknown as Payment;
   };
   return {
+    nearby: async (
+      token: string,
+      point: Coordinate,
+      signal?: AbortSignal,
+    ): Promise<Category[]> => {
+      coordinate(point);
+      const query = new URLSearchParams({
+        lat: String(point[1]),
+        lng: String(point[0]),
+      });
+      const values = await call(
+        '/drivers/nearby?' + query,
+        'GET',
+        undefined,
+        token,
+        signal,
+      );
+      if (!Array.isArray(values)) throw new AppError('contract');
+      return values.map((value) => {
+        const category = record(record(value).vehicle).vehicleType;
+        if (!categories.includes(category as Category))
+          throw new AppError('contract');
+        return category as Category;
+      });
+    },
     estimate: async (
       token: string,
       input: Booking,

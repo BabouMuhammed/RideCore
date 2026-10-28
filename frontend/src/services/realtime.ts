@@ -48,10 +48,15 @@ export const watchRide: RideWatcher = (token, rideId, handlers) => {
     handlers.connection(false);
     if (!closed && !socket.active) handlers.changed(); // REST checks expired/revoked identity.
   });
-  socket.on('connect_error', () => {
-    handlers.connection(false);
-    handlers.changed();
-  });
+  socket.on(
+    'connect_error',
+    (error: Error & { data?: { status?: number } }) => {
+      handlers.connection(false);
+      // Network reconnect attempts must not multiply REST polling/rate usage.
+      // A rejected identity still requires immediate authoritative session recovery.
+      if (error.data?.status === 401) handlers.changed();
+    },
+  );
   for (const event of rideEvents)
     socket.on(event, (data: { rideId?: string }) => {
       if (data?.rideId === rideId) handlers.changed();

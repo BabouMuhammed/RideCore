@@ -19,6 +19,10 @@ export const tripFixture: Trip = {
 };
 export function journeyApi(): jest.Mocked<JourneyApi> {
   return {
+    nearby: jest.fn<
+      ReturnType<JourneyApi['nearby']>,
+      Parameters<JourneyApi['nearby']>
+    >(async () => []),
     estimate: jest.fn<
       ReturnType<JourneyApi['estimate']>,
       Parameters<JourneyApi['estimate']>

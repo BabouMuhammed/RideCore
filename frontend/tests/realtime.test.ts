@@ -103,8 +103,12 @@ test('only matching ride events and valid real tracking samples are forwarded', 
 });
 test('server disconnection triggers authoritative credential/status recovery without faking a ride state', () => {
   const h = harness();
+  h.socket.handlers.get('connect_error')!(new Error('Network unavailable'));
+  expect(h.handlers.changed).not.toHaveBeenCalled();
   h.socket.active = false;
   h.socket.handlers.get('disconnect')!();
   expect(h.handlers.connection).toHaveBeenCalledWith(false);
   expect(h.handlers.changed).toHaveBeenCalledTimes(1);
+  h.socket.handlers.get('connect_error')!({ data: { status: 401 } });
+  expect(h.handlers.changed).toHaveBeenCalledTimes(2);
 });
