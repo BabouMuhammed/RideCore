@@ -172,11 +172,9 @@ test('receipt records an actual API result and then a bounded rating', async () 
   );
 });
 test('denied foreground permission still permits address search and manual map selection', async () => {
-  jest
-    .mocked(Location.requestForegroundPermissionsAsync)
-    .mockResolvedValue({
-      granted: false,
-    } as Location.LocationPermissionResponse);
+  jest.mocked(Location.requestForegroundPermissionsAsync).mockResolvedValue({
+    granted: false,
+  } as Location.LocationPermissionResponse);
   const h = fixture(),
     confirm = jest.fn();
   await mount(

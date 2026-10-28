@@ -3,7 +3,9 @@ import { watchRide, rideEvents } from '../src/services/realtime';
 jest.mock('socket.io-client', () => ({
   io: jest.fn(() => {
     const handlers = new Map<string, (...args: unknown[]) => void>();
-    const emit = jest.fn((_name, _payload, reply) => reply(null, { success: true }));
+    const emit = jest.fn((_name, _payload, reply) =>
+      reply(null, { success: true }),
+    );
     const socket = {
       active: true,
       handlers,

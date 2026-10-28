@@ -99,11 +99,9 @@ test.each(['expired', 'unavailable'] as const)(
   },
 );
 test('public network failure shows retry without exposing a token or backend error', async () => {
-  jest
-    .mocked(createJourneyApi)
-    .mockReturnValue({
-      snapshot: jest.fn().mockRejectedValue(new AppError('network')),
-    } as unknown as ReturnType<typeof createJourneyApi>);
+  jest.mocked(createJourneyApi).mockReturnValue({
+    snapshot: jest.fn().mockRejectedValue(new AppError('network')),
+  } as unknown as ReturnType<typeof createJourneyApi>);
   await mount();
   expect(
     await screen.findByRole('button', { name: 'Try again' }),

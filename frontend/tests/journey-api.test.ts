@@ -5,14 +5,12 @@ import {
 } from '../src/services/journey-api';
 import { tripFixture as trip } from './journey-fixtures';
 function adapter(data: unknown, status = 200) {
-  const fetcher = jest
-    .fn()
-    .mockResolvedValue({
-      ok: status < 400,
-      status,
-      headers: { get: () => null },
-      json: async () => ({ success: true, data }),
-    });
+  const fetcher = jest.fn().mockResolvedValue({
+    ok: status < 400,
+    status,
+    headers: { get: () => null },
+    json: async () => ({ success: true, data }),
+  });
   return {
     api: createJourneyApi('https://api.example.test/api', fetcher),
     fetcher,

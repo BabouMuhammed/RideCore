@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { View, Pressable } from 'react-native';
+import { colors, size, radius } from '../../theme/tokens';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
@@ -160,18 +161,37 @@ export function Receipt({
       ) : (
         <>
           <Text variant="heading">How was your ride?</Text>
-          <View style={{ gap: 8 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {[1, 2, 3, 4, 5].map((value) => (
-              <Button
+              <Pressable
                 key={value}
-                label={
-                  (rating === value ? '✓ ' : '') +
-                  `${value} ${value === 1 ? 'star' : 'stars'}`
-                }
-                variant="secondary"
+                accessibilityRole="button"
+                accessibilityLabel={`${value} ${value === 1 ? 'star' : 'stars'}`}
+                accessibilityState={{
+                  selected: rating === value,
+                  disabled: busy,
+                }}
                 disabled={busy}
                 onPress={() => setRating(value)}
-              />
+                style={{
+                  minWidth: size.touch,
+                  minHeight: size.touch,
+                  borderRadius: radius.pill,
+                  backgroundColor: colors.neutral,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 30,
+                    lineHeight: 38,
+                    color: value <= rating ? colors.brand : colors.secondary,
+                  }}
+                >
+                  ?
+                </Text>
+              </Pressable>
             ))}
           </View>
           <Input
