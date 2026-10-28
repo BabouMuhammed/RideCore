@@ -1,0 +1,15 @@
+# Frontend-only EAS packaging (EAS_NO_VCS=1, EAS_PROJECT_ROOT=frontend).
+.git/
+node_modules/
+.expo/
+.verification/
+dist/
+coverage/
+android/
+ios/
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+credentials.json
