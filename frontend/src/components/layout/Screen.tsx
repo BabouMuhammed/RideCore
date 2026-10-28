@@ -21,6 +21,7 @@ export function Screen({
       >
         {scroll ? (
           <ScrollView
+            style={styles.flex}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             contentContainerStyle={styles.content}
@@ -36,7 +37,7 @@ export function Screen({
 }
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.canvas },
-  flex: { flex: 1 },
+  flex: { flex: 1, minHeight: 0 },
   content: {
     flexGrow: 1,
     width: '100%',
