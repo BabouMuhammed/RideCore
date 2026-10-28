@@ -124,7 +124,8 @@ export function trip(value: unknown): Trip {
   if (v.trackingLocation != null) {
     const sample = record(v.trackingLocation);
     coordinate(record(sample.location).coordinates);
-    text(sample.updatedAt);
+    if (!Number.isFinite(Date.parse(text(sample.updatedAt))))
+      throw new AppError('contract');
   }
   return {
     ...base,
@@ -157,7 +158,8 @@ export function publicSnapshot(value: unknown): PublicSnapshot {
   if (v.location != null) {
     const p = record(v.location);
     coordinate([p.longitude, p.latitude]);
-    text(p.updatedAt);
+    if (!Number.isFinite(Date.parse(text(p.updatedAt))))
+      throw new AppError('contract');
   }
   if (v.driver != null) text(record(v.driver).firstName);
   if (v.vehicle != null)

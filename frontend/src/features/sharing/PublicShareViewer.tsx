@@ -45,7 +45,15 @@ export function PublicShareViewer({ token }: { token: string }) {
           if (Date.parse(result.sharing.expiresAt) <= Date.now()) end();
           else {
             expiresAt = Date.parse(result.sharing.expiresAt);
-            setSnapshot(result);
+            setSnapshot((previous) => {
+              const current = previous?.location;
+              return current &&
+                (!result.location ||
+                  Date.parse(current.updatedAt) >
+                    Date.parse(result.location.updatedAt))
+                ? { ...result, location: current }
+                : result;
+            });
             setError(undefined);
           }
         }

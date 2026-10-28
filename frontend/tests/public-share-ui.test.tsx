@@ -135,3 +135,41 @@ test('public GPS updates are validated and do not issue a REST request for every
   );
   expect(api.snapshot).toHaveBeenCalledTimes(1);
 });
+test('an older persisted public snapshot cannot roll back a newer real socket location', async () => {
+  const api = {
+    snapshot: jest.fn().mockResolvedValue({
+      ...snapshot,
+      location: {
+        latitude: 0,
+        longitude: 0,
+        updatedAt: '2026-10-28T12:00:00Z',
+      },
+    }),
+  };
+  jest
+    .mocked(createJourneyApi)
+    .mockReturnValue(api as unknown as ReturnType<typeof createJourneyApi>);
+  await mount();
+  await screen.findByText('Pickup · Synthetic pickup');
+  const socket = jest.mocked(io).mock.results[0]!.value as unknown as {
+    handlers: Map<string, (sample?: unknown) => void>;
+  };
+  await act(() =>
+    socket.handlers.get('share:location')!({
+      longitude: 1,
+      latitude: 1,
+      updatedAt: '2026-10-28T12:00:02Z',
+    }),
+  );
+  const lastUpdate = String(
+    screen.getByText(/Last driver update:/).props.children,
+  );
+  api.snapshot.mockResolvedValue({
+    ...snapshot,
+    rideStatus: 'driver_arriving',
+    location: { longitude: 0, latitude: 0, updatedAt: '2026-10-28T12:00:00Z' },
+  });
+  await act(() => socket.handlers.get('share:ride-status')!());
+  await screen.findByText('Your driver is approaching');
+  expect(screen.getByText(/Last driver update:/)).toHaveTextContent(lastUpdate);
+});

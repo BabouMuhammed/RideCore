@@ -114,7 +114,13 @@ export class JourneyController {
         changed || !trip || !isActive(trip) ? null : this.state.location,
     });
     if (trip?.status === 'requested') void this.checkDrivers(trip);
-    if (trip?.trackingLocation && isActive(trip) && !this.state.location)
+    if (
+      trip?.trackingLocation &&
+      isActive(trip) &&
+      (!this.state.location ||
+        Date.parse(trip.trackingLocation.updatedAt) >
+          Date.parse(this.state.location.timestamp))
+    )
       this.emit({
         location: {
           point: trip.trackingLocation.location.coordinates,

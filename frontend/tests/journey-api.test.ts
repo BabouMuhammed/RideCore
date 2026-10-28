@@ -132,6 +132,13 @@ test.each([
   { ...trip, status: 'fake' },
   { ...trip, estimatedFare: '125' },
   { ...trip, currency: 'USD' },
+  {
+    ...trip,
+    trackingLocation: {
+      location: { coordinates: [0, 0] },
+      updatedAt: 'not-a-timestamp',
+    },
+  },
 ])('malformed trip DTO is rejected', async (value) => {
   await expect(
     adapter(value).api.detail('credential', trip._id),

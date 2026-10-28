@@ -156,3 +156,40 @@ test('no-driver feedback uses only the backend category snapshot and leaves the 
   await Promise.resolve();
   expect(h.controller.getSnapshot().nearbyDrivers).toBeNull();
 });
+test('REST recovery replaces stale GPS with a newer stored sample and never rolls back a newer socket sample', async () => {
+  const h = harness();
+  h.api.list.mockResolvedValue([trip]);
+  h.api.detail.mockResolvedValue({
+    ...trip,
+    status: 'accepted',
+    driver: 'd'.repeat(24),
+    trackingLocation: {
+      location: { coordinates: [0, 0] },
+      updatedAt: '2026-10-28T12:00:00Z',
+    },
+  });
+  await h.controller.refresh();
+  h.handlers().location({ point: [1, 1], timestamp: '2026-10-28T12:00:01Z' });
+  h.api.detail.mockResolvedValue({
+    ...trip,
+    status: 'accepted',
+    driver: 'd'.repeat(24),
+    trackingLocation: {
+      location: { coordinates: [2, 2] },
+      updatedAt: '2026-10-28T12:00:02Z',
+    },
+  });
+  await h.controller.refresh();
+  expect(h.controller.getSnapshot().location?.point).toEqual([2, 2]);
+  h.api.detail.mockResolvedValue({
+    ...trip,
+    status: 'accepted',
+    driver: 'd'.repeat(24),
+    trackingLocation: {
+      location: { coordinates: [0, 0] },
+      updatedAt: '2026-10-28T12:00:00Z',
+    },
+  });
+  await h.controller.refresh();
+  expect(h.controller.getSnapshot().location?.point).toEqual([2, 2]);
+});
