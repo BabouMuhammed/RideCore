@@ -22,7 +22,7 @@ export const registration = {
   email: "rider@example.test",
   phone: "+447700900001",
   password,
-  role: "rider",
+  accountType: "rider",
 };
 export const location = { type: "Point", coordinates: [-0.12, 51.5] };
 export const rideInput = {

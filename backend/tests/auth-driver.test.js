@@ -36,7 +36,7 @@ describe("authentication", () => {
       ...registration,
       email: "newdriver@example.test",
       phone: "+447700900099",
-      role: "driver",
+      accountType: "driver",
     });
     expect(r.status).toBe(201);
     expect(

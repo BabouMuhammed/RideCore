@@ -22,7 +22,7 @@ export const registration = z
     email,
     phone: phoneNumber,
     password,
-    role: z.enum(["rider", "driver"]).default("rider"),
+    accountType: z.enum(["rider", "driver"]).default("rider"),
   })
   .strict();
 export const credentials = z

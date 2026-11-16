@@ -6,14 +6,16 @@ Responses: `{ "success": true, "data": ... }`. Errors: `{ "success": false, "err
 
 ## Authentication
 
-| Method | Path           | Role            | Body / result                                                                           |
-| ------ | -------------- | --------------- | --------------------------------------------------------------------------------------- |
-| GET    | /health        | Public          | API/database status                                                                     |
-| POST   | /auth/register | Public          | firstName, lastName, email, phone, password, optional role (rider/driver); returns user |
-| POST   | /auth/login    | Public          | exactly one email/phone, plus password; returns user and token                          |
-| GET    | /auth/me       | Any active user | Current user                                                                            |
+| Method | Path           | Role            | Body / result                                                                                                     |
+| ------ | -------------- | --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| GET    | /health        | Public          | API/database status                                                                                               |
+| POST   | /auth/register | Public          | firstName, lastName, email, phone, password, optional accountType (rider/driver; defaults to rider); returns user |
+| POST   | /auth/login    | Public          | exactly one email/phone, plus password; returns user and token                                                    |
+| GET    | /auth/me       | Any active user | Current user                                                                                                      |
 
 Passwords: 8-72 characters and at most 72 UTF-8 bytes. Phone must use international `+` prefix with 8-15 digits; spaces, parentheses and hyphens are normalized away. Emails are trimmed and lowercased. Names and general short strings are trimmed and capped at 120 characters.
+
+Registration rejects `role` (including rider/driver), admin flags, permissions, wallet/balance fields and all other unknown fields with 400. Use `accountType` for rider/driver onboarding; administrator creation is operator-only through `npm run admin:create`, documented in the README. Response `role` fields are unchanged. No `become-admin`, `become-staff` or `fire-staff` route exists; all return 404. JWT role claims are ignored: authentication reloads the active database account on every request before authorization.
 
 ## Drivers
 

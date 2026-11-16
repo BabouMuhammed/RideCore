@@ -164,7 +164,22 @@ export function createApi(
   const call = createTransport(baseUrl, fetcher);
   return {
     register: async (input: Registration, signal) =>
-      user(await call('/auth/register', 'POST', input, undefined, signal)),
+      user(
+        await call(
+          '/auth/register',
+          'POST',
+          {
+            firstName: input.firstName,
+            lastName: input.lastName,
+            email: input.email,
+            phone: input.phone,
+            password: input.password,
+            accountType: input.accountType,
+          },
+          undefined,
+          signal,
+        ),
+      ),
     login: async (input: Credentials, signal) => ({
       token: text(
         record(await call('/auth/login', 'POST', input, undefined, signal))

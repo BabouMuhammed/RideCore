@@ -24,7 +24,7 @@ export async function updateProfile(user, input) {
     const profile = await DriverProfile.findOneAndUpdate(
       { user: user._id, availabilityStatus: { $ne: "busy" } },
       {
-        ...input,
+        licenseNumber: input.licenseNumber,
         verificationStatus: "pending",
         availabilityStatus: "offline",
       },
@@ -44,7 +44,16 @@ export async function updateVehicle(user, input) {
     requireThat(profile, 409, "Cannot edit vehicle during an active ride");
     return Vehicle.findOneAndUpdate(
       { driver: user._id },
-      { ...input, verificationStatus: "pending" },
+      {
+        make: input.make,
+        model: input.model,
+        year: input.year,
+        color: input.color,
+        plateNumber: input.plateNumber,
+        vehicleType: input.vehicleType,
+        seats: input.seats,
+        verificationStatus: "pending",
+      },
       { returnDocument: "after", upsert: true, runValidators: true, session },
     );
   });

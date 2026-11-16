@@ -1,7 +1,11 @@
 import { attachSharedRides } from "./shared-rides.js";
 import { Server } from "socket.io";
 import { verifyIdentity } from "../services/identity.js";
-import { joinableRide, updateTrackedLocation } from "../services/tracking.js";
+import {
+  joinableRide,
+  participantRide,
+  updateTrackedLocation,
+} from "../services/tracking.js";
 import { ApiError } from "../utils/errors.js";
 import { roomInput, trackingInput } from "./schemas.js";
 import { rideEvents } from "./ride-events.js";
@@ -17,6 +21,28 @@ export function attachRealtime(
       done(null, !req.headers.origin || req.headers.origin === corsOrigin),
   });
   attachSharedRides(io, features);
+  // Room membership is cached, so revalidate recipients before disclosing data.
+  // This also revokes passive subscriptions when the account is disabled/deleted.
+  async function emitToParticipants(rideId, event, data) {
+    const roomName = room(rideId);
+    const ids = [...(io.sockets.adapter.rooms.get(roomName) || [])];
+    await Promise.all(
+      ids.map(async (id) => {
+        const socket = io.sockets.sockets.get(id);
+        if (!socket) return;
+        try {
+          const { user } = await verifyIdentity(socket.data.token, jwtSecret);
+          await participantRide(rideId, user);
+          if (socket.connected && socket.rooms.has(roomName))
+            socket.emit(event, data);
+        } catch (error) {
+          socket.leave(roomName);
+          if (error.status !== 403 && error.status !== 404)
+            socket.disconnect(true);
+        }
+      }),
+    );
+  }
   const rateWindows = new Map();
   const cleanRates = setInterval(() => {
     const cutoff = Date.now() - 60000;
@@ -102,16 +128,22 @@ export function attachRealtime(
           { ...input, rideId: input.rideId.toLowerCase() },
           features.LOCATION_PERSIST_INTERVAL_MS,
         );
-        io.to(room(event.rideId)).emit("driver:location", event);
+        await emitToParticipants(event.rideId, "driver:location", event);
         return { rideId: event.rideId, timestamp: event.timestamp };
       }),
     );
   });
+  let pendingChanges = Promise.resolve();
   const changed = (payload) => {
-    const { event, ...data } = payload;
-    io.to(room(payload.rideId)).emit(event, data);
-    if (["completed", "cancelled"].includes(payload.status))
-      io.in(room(payload.rideId)).socketsLeave(room(payload.rideId));
+    // EventEmitter does not await listeners; serialize asynchronous permission checks.
+    pendingChanges = pendingChanges
+      .then(async () => {
+        const { event, ...data } = payload;
+        await emitToParticipants(payload.rideId, event, data);
+        if (["completed", "cancelled"].includes(payload.status))
+          io.in(room(payload.rideId)).socketsLeave(room(payload.rideId));
+      })
+      .catch(() => console.error("Realtime notification failed"));
   };
   rideEvents.on("change", changed);
   httpServer.once("close", () => {

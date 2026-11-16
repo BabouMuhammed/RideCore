@@ -67,7 +67,7 @@ test('registration, phone login and OTP/account representation share the same no
     lastName: 'Rider',
     email: 'rider@example.test',
     phone: '+220' + national,
-    role: 'rider',
+    accountType: 'rider',
   });
   expect(loginPayload('phone', fields.phone, fields.password)).toEqual({
     phone: registration.phone,

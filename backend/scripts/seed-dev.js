@@ -26,14 +26,14 @@ const accounts = {
     lastName: "Jallow",
     email: "rider@ridecore.test",
     phone: "+2203000001",
-    role: "rider",
+    accountType: "rider",
   },
   driver: {
     firstName: "Lamin",
     lastName: "Sanneh",
     email: "driver@ridecore.test",
     phone: "+2203000002",
-    role: "driver",
+    accountType: "driver",
   },
   admin: {
     firstName: "Ride",

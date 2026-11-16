@@ -19,7 +19,10 @@ try {
   await User.init();
   const password = await bcrypt.hash(input.data.password, 12);
   await User.create({
-    ...input.data,
+    firstName: input.data.firstName,
+    lastName: input.data.lastName,
+    email: input.data.email,
+    phone: input.data.phone,
     password,
     role: "admin",
     isVerified: true,

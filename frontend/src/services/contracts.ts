@@ -33,7 +33,7 @@ export type Registration = {
   email: string;
   phone: string;
   password: string;
-  role: 'rider' | 'driver';
+  accountType: 'rider' | 'driver';
 };
 export type Credentials =
   { email: string; password: string } | { phone: string; password: string };

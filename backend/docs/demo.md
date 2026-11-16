@@ -12,7 +12,7 @@ Set Postman `baseUrl` to `http://localhost:5050/api`. Create variables `riderTok
   "email": "rider@example.test",
   "phone": "+447700900101",
   "password": "Demo-rider-pass-123",
-  "role": "rider"
+  "accountType": "rider"
 }
 ```
 
@@ -25,7 +25,7 @@ Set Postman `baseUrl` to `http://localhost:5050/api`. Create variables `riderTok
   "email": "driver@example.test",
   "phone": "+447700900102",
   "password": "Demo-driver-pass-123",
-  "role": "driver"
+  "accountType": "driver"
 }
 ```
 

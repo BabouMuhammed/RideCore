@@ -153,7 +153,7 @@ try {
         email: 'journey-rider@example.test',
         phone: '+220' + '99' + '0'.repeat(5),
         password,
-        role: 'rider',
+        accountType: 'rider',
       });
       assert.equal(user.token, undefined);
       assert.equal(session.getSnapshot().stage, 'anonymous');
@@ -172,7 +172,7 @@ try {
     email: 'journey-driver@example.test',
     phone: '+220' + '98' + '0'.repeat(5),
     password,
-    role: 'driver',
+    accountType: 'driver',
   });
   const driverToken = (await api.login({ email: driverUser.email, password }))
     .token;

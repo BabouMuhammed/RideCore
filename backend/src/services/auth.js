@@ -3,10 +3,25 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import { User, DriverProfile } from "../models/index.js";
 import { ApiError } from "../utils/errors.js";
+import { registration } from "../routes/schemas.js";
 export async function register(input) {
-  const password = await bcrypt.hash(input.password, 12);
+  // Validate here too: internal callers must not bypass the HTTP field policy.
+  const data = registration.parse(input);
+  const password = await bcrypt.hash(data.password, 12);
   return mongoose.connection.transaction(async (session) => {
-    const [user] = await User.create([{ ...input, password }], { session });
+    const [user] = await User.create(
+      [
+        {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          password,
+          role: data.accountType === "driver" ? "driver" : "rider",
+        },
+      ],
+      { session },
+    );
     if (user.role === "driver")
       await DriverProfile.create([{ user: user._id }], { session });
     return user;

@@ -193,6 +193,57 @@ describe("ride room authorization and reconnects", () => {
 });
 
 describe("tracking authorization, validation and persistence", () => {
+  it.each(["location", "ride-state"])(
+    "revokes a disabled passive subscriber before %s disclosure",
+    async (kind) => {
+      const ride = await acceptedRide();
+      const rider = await connected("rider");
+      const driver = await connected("driver");
+      await join(rider, ride._id);
+      await join(driver, ride._id);
+      const received = [];
+      rider.onAny((name) => received.push(name));
+      await User.updateOne({ _id: actors.rider.user._id }, { isActive: false });
+      const disconnected = event(rider, "disconnect");
+      if (kind === "location") {
+        expect(
+          (await ack(driver, "driver:location:update", tracking(ride._id)))
+            .success,
+        ).toBe(true);
+      } else {
+        const allowed = event(driver, "ride:driver-arriving");
+        expect(
+          (await api("driver", "patch", `/api/rides/${ride._id}/arriving`))
+            .status,
+        ).toBe(200);
+        await allowed;
+      }
+      expect(await disconnected).toBe("io server disconnect");
+      expect(received).toEqual([]);
+    },
+  );
+
+  it("denies a demoted driver's existing socket token without changing location", async () => {
+    const ride = await acceptedRide();
+    const driver = await connected("driver");
+    await join(driver, ride._id);
+    await User.updateOne({ _id: actors.driver.user._id }, { role: "rider" });
+    const beforeRide = await Ride.findById(ride._id).lean();
+    const beforeProfile = await DriverProfile.findById(
+      actors.driver.profile._id,
+    ).lean();
+    const result = await ack(
+      driver,
+      "driver:location:update",
+      tracking(ride._id),
+    );
+    expect(result.error.status).toBe(403);
+    expect(await Ride.findById(ride._id).lean()).toEqual(beforeRide);
+    expect(
+      await DriverProfile.findById(actors.driver.profile._id).lean(),
+    ).toEqual(beforeProfile);
+  });
+
   it("broadcasts sanitized assigned-driver locations only to the authorized ride room", async () => {
     const ride = await acceptedRide();
     const rider = await connected("rider");

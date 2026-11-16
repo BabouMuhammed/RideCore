@@ -110,7 +110,7 @@ describe("public registration through completed ride end-to-end", () => {
         ...registration,
         email,
         phone,
-        role,
+        accountType: role,
       });
       expect(registered.status).toBe(201);
       expect(registered.body.data).toMatchObject({ role, isActive: true });

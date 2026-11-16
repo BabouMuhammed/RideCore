@@ -44,7 +44,7 @@ test('registration uses the exact canonical payload and accepts the token-less r
     email: rider.email,
     phone: rider.phone,
     password: 'test-password',
-    role: 'rider',
+    accountType: 'rider',
   });
 });
 test.each(['email', 'phone'] as const)(
@@ -58,6 +58,29 @@ test.each(['email', 'phone'] as const)(
     );
     await h.api.login(payload);
     expect(h.fetcher.mock.calls[0]![1]!.body).toBe(JSON.stringify(payload));
+  },
+);
+
+test.each(['rider', 'driver'] as const)(
+  'registration sends only allowed fields for %s onboarding',
+  async (accountType) => {
+    const h = apiWith();
+    const payload = registrationPayload({
+      ...rider,
+      password: 'test-password',
+      accountType,
+    });
+    await h.api.register({
+      ...payload,
+      role: 'admin',
+      admin: true,
+      permissions: ['admin'],
+      walletBalance: 999,
+    } as typeof payload);
+    expect(JSON.parse(h.fetcher.mock.calls[0]![1]!.body as string)).toEqual(
+      payload,
+    );
+    expect(payload.accountType).toBe(accountType);
   },
 );
 test('authenticated OTP is bound to the registered canonical phone; no unsupported phone field is sent', async () => {
