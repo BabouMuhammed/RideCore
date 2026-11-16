@@ -10,7 +10,7 @@ import { Text } from './Text';
 
 type Props = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
-  variant?: 'primary' | 'secondary' | 'destructive';
+  variant?: 'primary' | 'secondary' | 'destructive' | 'taxi';
   loading?: boolean;
 };
 export function Button({
@@ -25,7 +25,9 @@ export function Button({
     ? colors.disabledText
     : variant === 'secondary'
       ? colors.text
-      : colors.onBrand;
+      : variant === 'taxi'
+        ? colors.onTaxi
+        : colors.onBrand;
   return (
     <Pressable
       {...props}
@@ -42,7 +44,11 @@ export function Button({
               ? colors.neutral
               : variant === 'destructive'
                 ? colors.error
-                : pressed
+                : variant === 'taxi'
+                  ? pressed
+                    ? colors.taxiPressed
+                    : colors.taxi
+                  : pressed
                   ? colors.brandPressed
                   : colors.brand,
         },

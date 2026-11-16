@@ -6,7 +6,7 @@ import { Screen } from '../../../components/layout/Screen';
 import { Text } from '../../../components/ui/Text';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
-import { IconButton } from '../../../components/ui/IconButton';
+import { BrandHeader } from '../../../components/layout/BrandHeader';
 import { PhoneInput, PasswordInput } from '../components/AuthFields';
 import { useSession } from '../../session/SessionProvider';
 import { FormError, loginPayload } from '../validation';
@@ -44,17 +44,16 @@ export function SignInScreen({
     }
   }
   return (
-    <Screen>
-      <IconButton
-        icon="back"
-        label="Go back"
-        onPress={() => navigation.goBack()}
-        disabled={busy}
-      />
-      <Text variant="title" accessibilityRole="header">
-        Sign in
-      </Text>
-      <Text tone="secondary">Welcome back to RideCore.</Text>
+    <Screen
+      header={
+        <BrandHeader
+          title="Sign in"
+          subtitle="Welcome back to RideCore."
+          onBack={() => navigation.goBack()}
+          backDisabled={busy}
+        />
+      }
+    >
       {route.params?.created && (
         <Text accessibilityLiveRegion="polite">
           Account created. Sign in to continue.

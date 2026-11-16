@@ -6,7 +6,7 @@ import { Screen } from '../../../components/layout/Screen';
 import { Text } from '../../../components/ui/Text';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
-import { IconButton } from '../../../components/ui/IconButton';
+import { BrandHeader } from '../../../components/layout/BrandHeader';
 import { useSession } from '../../session/SessionProvider';
 import { maskGambianPhone } from '../phone';
 import { safeError } from '../../../services/errors';
@@ -102,16 +102,15 @@ export function PhoneVerificationScreen({
     }
   }
   return (
-    <Screen>
-      <IconButton
-        icon="back"
-        label="Go back"
-        onPress={() => navigation.goBack()}
-        disabled={busy}
-      />
-      <Text variant="title" accessibilityRole="header">
-        {verified ? 'Phone verified' : 'Verify your phone'}
-      </Text>
+    <Screen
+      header={
+        <BrandHeader
+          title={verified ? 'Phone verified' : 'Verify your phone'}
+          onBack={() => navigation.goBack()}
+          backDisabled={busy}
+        />
+      }
+    >
       {verified ? (
         <Text>Your registered phone number has been verified.</Text>
       ) : (

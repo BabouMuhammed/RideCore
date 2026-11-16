@@ -27,10 +27,12 @@ import { useJourney } from '../../journey/JourneyProvider';
 import { isActive } from '../../journey/JourneyController';
 import { money, statusLabels } from '../../journey/presentation';
 import { Cancellation } from '../../journey/Cancellation';
+import { TripProgress } from '../../journey/TripProgress';
+import { PlateBadge } from '../../journey/PlateBadge';
 import { SharePanel } from '../../sharing/SharePanel';
 import { Receipt } from '../../receipt/Receipt';
 import { safeError } from '../../../services/errors';
-import { colors, elevation, radius, size } from '../../../theme/tokens';
+import { colors, elevation, fonts, radius, size } from '../../../theme/tokens';
 
 export function BookingHome({
   service,
@@ -241,9 +243,16 @@ export function BookingHome({
           onSelect={selecting && !trip && !state.loading ? setPin : undefined}
         />
       )}
-      <View style={[styles.brand, { top: insets.top + 12 }]}>
+      <View
+        style={[
+          styles.brand,
+          !trip && !state.loading && styles.brandBare,
+          { top: insets.top + 12 },
+        ]}
+      >
         {!trip && !state.loading ? (
           <IconButton
+            tone="onTaxi"
             icon="back"
             label="Back to home"
             onPress={() => {
@@ -293,6 +302,7 @@ export function BookingHome({
             <Text variant="heading" accessibilityLiveRegion="polite">
               {statusLabels[trip.status]}
             </Text>
+            <TripProgress status={trip.status} />
             {runtime && isActive(trip) && (
               <Button
                 label={
@@ -338,27 +348,56 @@ export function BookingHome({
                 />
               </>
             )}
-            {trip.driverDetails && (
-              <Text variant="label">
-                {trip.driverDetails.firstName}
-                {trip.driverDetails.rating != null
-                  ? ` · ${trip.driverDetails.rating.toFixed(1)} ★`
-                  : ''}
-              </Text>
-            )}
-            {trip.vehicle && (
+            {(trip.driverDetails || trip.vehicle) && (
               <View style={styles.driverCard}>
-                <VehicleArt
-                  width={112}
-                  premium={trip.vehicleType === 'comfort'}
-                />
-                <View style={{ flex: 1, gap: 6 }}>
-                  <Text>
-                    {trip.vehicle.color} · {trip.vehicle.make}{' '}
-                    {trip.vehicle.model}
-                  </Text>
-                  <Text variant="label">{trip.vehicle.plateNumber}</Text>
+                <View style={styles.driverRow}>
+                  {trip.driverDetails ? (
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>
+                        {trip.driverDetails.firstName.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  ) : (
+                    <VehicleArt
+                      width={72}
+                      premium={trip.vehicleType === 'comfort'}
+                    />
+                  )}
+                  <View style={{ flex: 1, gap: 2 }}>
+                    {trip.driverDetails && (
+                      <Text variant="heading">
+                        {trip.driverDetails.firstName}
+                      </Text>
+                    )}
+                    {trip.driverDetails?.rating != null && (
+                      <View style={styles.rating}>
+                        <Icon name="star" size={15} color={colors.secondary} />
+                        <Text variant="caption" tone="secondary">
+                          {trip.driverDetails.rating.toFixed(1)}
+                        </Text>
+                      </View>
+                    )}
+                    {trip.vehicle && (
+                      <Text variant="caption" tone="secondary">
+                        {trip.vehicle.color} {trip.vehicle.make}{' '}
+                        {trip.vehicle.model}
+                      </Text>
+                    )}
+                  </View>
                 </View>
+                {trip.vehicle && (
+                  <View style={styles.plateRow}>
+                    <PlateBadge plate={trip.vehicle.plateNumber} />
+                    {isActive(trip) && trip.status !== 'in_progress' && (
+                      <View style={styles.plateTip}>
+                        <Icon name="shield" size={18} color={colors.brand} />
+                        <Text variant="caption" style={{ flex: 1 }}>
+                          Check the plate before you get in.
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
             )}
             {trip.status === 'driver_arrived' && (
@@ -580,12 +619,41 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
   driverCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+    gap: 14,
     padding: 16,
     borderRadius: radius.lg,
-    backgroundColor: colors.neutral,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  driverRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.brandSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontFamily: fonts.wideBold,
+    fontSize: 22,
+    lineHeight: 28,
+    color: colors.brand,
+  },
+  rating: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  plateRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 12,
+  },
+  plateTip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    minWidth: 160,
   },
   routeFields: {
     backgroundColor: colors.neutral,
@@ -617,4 +685,6 @@ const styles = StyleSheet.create({
     maxWidth: size.contentMax,
     ...elevation.floating,
   },
+  // The back button is already a round surface; no pill around it.
+  brandBare: { paddingVertical: 0, paddingHorizontal: 0 },
 });

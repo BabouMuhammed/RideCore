@@ -13,6 +13,7 @@ import { money, statusLabels } from '../../journey/presentation';
 import type { Trip } from '../../../services/journey-api';
 import { safeError } from '../../../services/errors';
 import { Receipt } from '../../receipt/Receipt';
+import { TripRow } from '../TripRow';
 export function ActivityScreen() {
   const { state } = useSession();
   return state.stage === 'ready' ? <Activity /> : null;
@@ -63,11 +64,9 @@ function Activity() {
             </View>
           )}
           {state.history.map((trip) => (
-            <ListRow
+            <TripRow
               key={trip._id}
-              icon="car"
-              title={trip.destination.address}
-              subtitle={`${statusLabels[trip.status]} · ${money(trip.finalFare ?? trip.estimatedFare, trip.currency)} · ${new Date(trip.requestedAt).toLocaleDateString()}`}
+              trip={trip}
               onPress={() => setSelected(trip._id)}
             />
           ))}

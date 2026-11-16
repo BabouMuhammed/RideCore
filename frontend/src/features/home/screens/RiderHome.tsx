@@ -4,7 +4,8 @@ import { Text } from '../../../components/ui/Text';
 import { Icon } from '../../../components/ui/Icon';
 import { ListRow } from '../../../components/ui/ListRow';
 import { VehicleArt } from '../../../components/brand/VehicleArt';
-import { colors, radius } from '../../../theme/tokens';
+import { colors, fonts, radius, space } from '../../../theme/tokens';
+import { useSession } from '../../session/SessionProvider';
 import type { Category, Stop, Trip } from '../../../services/journey-api';
 
 export const rideOptions: {
@@ -21,6 +22,13 @@ export const rideOptions: {
   { category: 'xl', title: 'XL', detail: 'More space for your group' },
 ];
 
+function greeting(now = new Date()) {
+  const hour = now.getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 export function RiderHome({
   onPlan,
   history,
@@ -28,36 +36,48 @@ export function RiderHome({
   onPlan(category?: Category, destination?: Stop): void;
   history: Trip[];
 }) {
+  const { state } = useSession();
+  const firstName = state.stage === 'ready' ? state.user.firstName : undefined;
   return (
     <Screen edges={['top', 'left', 'right']}>
-      <Text variant="display" style={styles.wordmark}>
-        RideCore
-      </Text>
+      <View style={styles.header}>
+        <Text style={styles.wordmark}>RideCore</Text>
+        <Text variant="title" accessibilityRole="header">
+          {firstName ? `${greeting()}, ${firstName}` : greeting()}
+        </Text>
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Where to?"
         onPress={() => onPlan()}
-        style={styles.search}
+        style={({ pressed }) => [
+          styles.search,
+          pressed && { backgroundColor: colors.taxiPressed },
+        ]}
       >
-        <Icon name="search" size={26} />
-        <Text variant="heading" style={{ flex: 1 }}>
-          Where to?
-        </Text>
+        <Icon name="search" size={26} color={colors.onTaxi} />
+        <Text style={styles.searchLabel}>Where to?</Text>
         <View style={styles.now}>
-          <Icon name="activity" size={16} />
-          <Text variant="caption">Now</Text>
+          <Icon name="activity" size={16} color={colors.onTaxi} />
+          <Text variant="caption" style={{ color: colors.onTaxi }}>
+            Now
+          </Text>
         </View>
       </Pressable>
-      {history.slice(0, 2).map((trip) => (
-        <ListRow
-          key={trip._id}
-          icon="activity"
-          title={trip.destination.address}
-          subtitle="Recent destination"
-          onPress={() => onPlan(undefined, trip.destination)}
-        />
-      ))}
-      <Text variant="heading">Suggestions</Text>
+      {history.length > 0 && (
+        <View>
+          {history.slice(0, 3).map((trip) => (
+            <ListRow
+              key={trip._id}
+              icon="activity"
+              title={trip.destination.address}
+              subtitle="Recent destination"
+              onPress={() => onPlan(undefined, trip.destination)}
+            />
+          ))}
+        </View>
+      )}
+      <Text variant="heading">Choose a ride</Text>
       <View style={styles.tiles}>
         {rideOptions.map((option) => (
           <Pressable
@@ -65,7 +85,10 @@ export function RiderHome({
             accessibilityRole="button"
             accessibilityLabel={option.title}
             onPress={() => onPlan(option.category)}
-            style={styles.tile}
+            style={({ pressed }) => [
+              styles.tile,
+              pressed && { borderColor: colors.brand },
+            ]}
           >
             <VehicleArt width={80} premium={option.category === 'comfort'} />
             <Text variant="label">{option.title}</Text>
@@ -78,18 +101,26 @@ export function RiderHome({
         onPress={() => onPlan()}
         style={styles.feature}
       >
-        <View style={{ flex: 1, minWidth: 150, gap: 10 }}>
-          <Text variant="heading">Go anywhere.{'\n'}Get there your way.</Text>
-          <Text>Find the right ride for you</Text>
-          <View style={styles.arrow}>
-            <Icon name="chevron" />
+        <View style={styles.featureBody}>
+          <View style={{ flex: 1, minWidth: 150, gap: 10 }}>
+            <Text variant="heading" tone="inverse">
+              Know the fare before you go.
+            </Text>
+            <Text tone="inverse">
+              See the price in dalasi for Ride, Comfort or XL, then book.
+            </Text>
+            <View style={styles.arrow}>
+              <Icon name="chevron" color={colors.onTaxi} />
+            </View>
           </View>
+          <VehicleArt width={140} />
         </View>
-        <VehicleArt width={150} />
+        <View style={styles.featureBand} />
       </Pressable>
-      <Text variant="heading">A ride for every day</Text>
       <View style={styles.tip}>
-        <Icon name="shield" size={28} />
+        <View style={styles.tipIcon}>
+          <Icon name="shield" size={24} color={colors.brand} />
+        </View>
         <View style={{ flex: 1, gap: 4 }}>
           <Text variant="label">Share your journey</Text>
           <Text tone="secondary" variant="caption">
@@ -102,28 +133,35 @@ export function RiderHome({
   );
 }
 const styles = StyleSheet.create({
+  header: { gap: space.xs, marginBottom: space.xs },
   wordmark: {
-    fontSize: 36,
-    lineHeight: 44,
-    fontWeight: '500',
-    letterSpacing: -1.5,
-    marginBottom: 8,
+    fontFamily: fonts.wideBold,
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.brand,
   },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.neutral,
-    borderRadius: radius.pill,
-    padding: 16,
+    backgroundColor: colors.taxi,
+    borderRadius: radius.md,
+    paddingHorizontal: 18,
     minHeight: 64,
+  },
+  searchLabel: {
+    flex: 1,
+    fontFamily: fonts.wideBold,
+    fontSize: 20,
+    lineHeight: 26,
+    color: colors.onTaxi,
   },
   now: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     borderLeftWidth: 1,
-    borderLeftColor: '#CBCBCB',
+    borderLeftColor: 'rgba(12, 36, 22, 0.3)',
     paddingLeft: 12,
   },
   tiles: { flexDirection: 'row', gap: 10 },
@@ -134,23 +172,28 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: colors.neutral,
     borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: 'transparent',
     paddingVertical: 16,
   },
   feature: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    backgroundColor: '#D5E5E3',
+    backgroundColor: colors.brand,
     borderRadius: radius.lg,
-    padding: 20,
     overflow: 'hidden',
     marginVertical: 8,
   },
+  featureBody: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    padding: 20,
+  },
+  featureBand: { height: 10, backgroundColor: colors.taxi },
   arrow: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.taxi,
     borderRadius: radius.pill,
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -159,5 +202,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
     paddingVertical: 12,
+  },
+  tipIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: colors.brandSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

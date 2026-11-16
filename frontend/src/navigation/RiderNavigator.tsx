@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from '../components/ui/Icon';
-import { colors, size, space, type } from '../theme/tokens';
+import { colors, fonts, size, space, type } from '../theme/tokens';
 import { HomeScreen } from '../features/home/screens/HomeScreen';
 import { ServicesScreen } from '../features/home/screens/ServicesScreen';
 import { ActivityScreen } from '../features/activity/screens/ActivityScreen';
@@ -20,9 +20,9 @@ export function RiderNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: colors.brand,
+        tabBarActiveTintColor: colors.text,
         tabBarInactiveTintColor: colors.secondary,
-        tabBarLabelStyle: { ...type.caption, fontWeight: '600' },
+        tabBarLabelStyle: { ...type.caption, fontFamily: fonts.semibold },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,

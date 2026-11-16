@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Pressable } from 'react-native';
-import { colors, size, radius } from '../../theme/tokens';
+import { colors, fonts, size, radius, space } from '../../theme/tokens';
+import { TaxiBand } from '../../components/brand/TaxiBand';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
@@ -112,16 +113,27 @@ export function Receipt({
       <Text variant="heading">Trip receipt</Text>
       <View
         style={{
-          backgroundColor: colors.neutral,
+          backgroundColor: colors.brand,
           borderRadius: radius.lg,
-          padding: 24,
-          gap: 8,
+          overflow: 'hidden',
         }}
       >
-        <Text tone="secondary">Your total</Text>
-        <Text variant="display">
-          {money(trip.finalFare ?? trip.estimatedFare, trip.currency)}
-        </Text>
+        <View style={{ padding: space.xl, gap: space.xs }}>
+          <Text tone="inverse">Your total</Text>
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            style={{
+              fontFamily: fonts.wideBlack,
+              fontSize: 34,
+              lineHeight: 42,
+              color: colors.onBrand,
+            }}
+          >
+            {money(trip.finalFare ?? trip.estimatedFare, trip.currency)}
+          </Text>
+        </View>
+        <TaxiBand thin />
       </View>
       {!loaded && (
         <Button
@@ -148,21 +160,75 @@ export function Receipt({
               Choose how to record this payment. Both methods are simulated for
               this project; no payment gateway or wallet balance is connected.
             </Text>
-            <Button
-              label={(method === 'cash' ? '✓ ' : '') + 'Cash'}
-              variant="secondary"
-              disabled={busy}
-              onPress={() => setMethod('cash')}
-            />
-            <Button
-              label={
-                (method === 'mock_wallet' ? '✓ ' : '') +
-                'Mock wallet (simulation)'
-              }
-              variant="secondary"
-              disabled={busy}
-              onPress={() => setMethod('mock_wallet')}
-            />
+            <View
+              accessibilityRole="radiogroup"
+              accessibilityLabel="Payment method"
+              style={{ gap: space.sm }}
+            >
+              {(
+                [
+                  ['cash', 'Cash', 'Pay the driver directly'],
+                  [
+                    'mock_wallet',
+                    'Mock wallet (simulation)',
+                    'Stands in for Wave, QMoney or Africell Money',
+                  ],
+                ] as const
+              ).map(([value, label, detail]) => {
+                const checked = method === value;
+                return (
+                  <Pressable
+                    key={value}
+                    accessibilityRole="radio"
+                    accessibilityLabel={label}
+                    accessibilityState={{ checked, disabled: busy }}
+                    disabled={busy}
+                    onPress={() => setMethod(value)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: space.md,
+                      minHeight: size.touch,
+                      padding: space.lg,
+                      borderRadius: radius.md,
+                      borderWidth: 2,
+                      borderColor: checked ? colors.brand : colors.border,
+                      backgroundColor: checked ? colors.brandSoft : colors.surface,
+                      opacity: busy ? 0.6 : 1,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 11,
+                        borderWidth: 2,
+                        borderColor: checked ? colors.brand : colors.secondary,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {checked && (
+                        <View
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: 5,
+                            backgroundColor: colors.brand,
+                          }}
+                        />
+                      )}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text variant="label">{label}</Text>
+                      <Text variant="caption" tone="secondary">
+                        {detail}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
             <Button
               label="Record simulated payment"
               loading={busy}
@@ -192,7 +258,8 @@ export function Receipt({
                   minWidth: size.touch,
                   minHeight: size.touch,
                   borderRadius: radius.pill,
-                  backgroundColor: colors.neutral,
+                  backgroundColor:
+                    value <= rating ? colors.taxi : colors.neutral,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -200,7 +267,7 @@ export function Receipt({
                 <Icon
                   name="star"
                   size={30}
-                  color={value <= rating ? colors.brand : '#B0B0B0'}
+                  color={value <= rating ? colors.onTaxi : colors.disabledText}
                 />
               </Pressable>
             ))}

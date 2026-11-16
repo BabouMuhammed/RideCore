@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -12,9 +12,13 @@ export function Screen({
   children,
   scroll = true,
   edges = ['top', 'right', 'bottom', 'left'],
-}: PropsWithChildren<{ scroll?: boolean; edges?: Edge[] }>) {
+  header,
+}: PropsWithChildren<{ scroll?: boolean; edges?: Edge[]; header?: ReactNode }>) {
+  // A header draws behind the status bar itself, so the top inset is its job.
+  const safeEdges = header ? edges.filter((edge) => edge !== 'top') : edges;
+  const body = <View style={styles.content}>{children}</View>;
   return (
-    <SafeAreaView style={styles.safe} edges={edges}>
+    <SafeAreaView style={styles.safe} edges={safeEdges}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -24,12 +28,22 @@ export function Screen({
             style={styles.flex}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            contentContainerStyle={styles.content}
+            contentContainerStyle={header ? styles.grow : styles.content}
           >
-            {children}
+            {header ? (
+              <>
+                {header}
+                {body}
+              </>
+            ) : (
+              children
+            )}
           </ScrollView>
         ) : (
-          <View style={styles.content}>{children}</View>
+          <>
+            {header}
+            {body}
+          </>
         )}
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -38,6 +52,7 @@ export function Screen({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.canvas },
   flex: { flex: 1, minHeight: 0 },
+  grow: { flexGrow: 1 },
   content: {
     flexGrow: 1,
     width: '100%',

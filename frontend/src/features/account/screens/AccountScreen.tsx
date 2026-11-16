@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Icon } from '../../../components/ui/Icon';
-import { colors, radius } from '../../../theme/tokens';
+import { colors, fonts, radius } from '../../../theme/tokens';
 import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import type { RiderStackParams } from '../../../navigation/types';
 import { Screen } from '../../../components/layout/Screen';
@@ -30,7 +30,11 @@ export function AccountScreen() {
               <Text tone="secondary">Your RideCore account</Text>
             </View>
             <View style={styles.avatar}>
-              <Icon name="account" size={40} />
+              <Text style={styles.initials}>
+                {(
+                  state.user.firstName.charAt(0) + state.user.lastName.charAt(0)
+                ).toUpperCase()}
+              </Text>
             </View>
           </View>
           <View style={styles.security}>
@@ -88,10 +92,16 @@ const styles = StyleSheet.create({
   avatar: {
     width: 76,
     height: 76,
-    backgroundColor: colors.neutral,
+    backgroundColor: colors.taxi,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  initials: {
+    fontFamily: fonts.wideBold,
+    fontSize: 26,
+    lineHeight: 32,
+    color: colors.onTaxi,
   },
   security: {
     flexDirection: 'row',

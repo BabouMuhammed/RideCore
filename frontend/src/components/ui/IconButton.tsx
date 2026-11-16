@@ -6,12 +6,16 @@ export function IconButton({
   label,
   onPress,
   disabled = false,
+  tone = 'default',
 }: {
   icon: IconName;
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  tone?: 'default' | 'onTaxi';
 }) {
+  const rest = tone === 'onTaxi' ? colors.surface : colors.neutral;
+  const down = tone === 'onTaxi' ? colors.taxiPressed : colors.border;
   return (
     <Pressable
       accessibilityRole="button"
@@ -21,7 +25,7 @@ export function IconButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: pressed ? colors.border : colors.neutral },
+        { backgroundColor: pressed ? down : rest },
         disabled && { opacity: 0.5 },
       ]}
     >

@@ -18,7 +18,7 @@ export function JourneySheet({ children }: PropsWithChildren) {
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
       }}
-      handleIndicatorStyle={{ backgroundColor: '#CBCBCB', width: 36 }}
+      handleIndicatorStyle={{ backgroundColor: colors.border, width: 40 }}
     >
       <BottomSheetScrollView
         keyboardShouldPersistTaps="handled"

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { colors, fonts } from '../theme/tokens';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path, Rect, Text as SvgText } from 'react-native-svg';
 import type { MapCanvasProps } from '../features/map/MapCanvas.types';
@@ -74,13 +75,13 @@ export function DemoMap({ pins, route, onSelect }: MapCanvasProps) {
             stroke="#FFF"
             strokeWidth="12"
           />
-          <SvgText x="70" y="62" fill="#6B756D" fontSize="14">
+          <SvgText fontFamily={fonts.medium} x="70" y="62" fill="#6B756D" fontSize="14">
             KOLOLI
           </SvgText>
-          <SvgText x="225" y="96" fill="#6B756D" fontSize="14">
+          <SvgText fontFamily={fonts.medium} x="225" y="96" fill="#6B756D" fontSize="14">
             SERREKUNDA
           </SvgText>
-          <SvgText x="78" y="310" fill="#879387" fontSize="12">
+          <SvgText fontFamily={fonts.medium} x="78" y="310" fill="#879387" fontSize="12">
             THE GAMBIA
           </SvgText>
           {points.length > 1 && (
@@ -103,7 +104,7 @@ export function DemoMap({ pins, route, onSelect }: MapCanvasProps) {
                 cx={x}
                 cy={y}
                 r={pin.id === 'driver' ? 10 : 7}
-                fill={pin.id === 'driver' ? '#276752' : '#000'}
+                fill={pin.id === 'driver' ? colors.brand : colors.text}
                 stroke="#FFF"
                 strokeWidth="3"
               />

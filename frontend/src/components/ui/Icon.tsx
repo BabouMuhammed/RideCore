@@ -15,11 +15,13 @@ import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import Mail from 'lucide-react-native/icons/mail';
 import Star from 'lucide-react-native/icons/star';
 import Share2 from 'lucide-react-native/icons/share-2';
+import Check from 'lucide-react-native/icons/check';
 import type { LucideIcon } from 'lucide-react-native';
 import { Platform } from 'react-native';
 import { colors, size as sizes } from '../../theme/tokens';
 const icons = {
   share: Share2,
+  check: Check,
   car: Car,
   search: Search,
   services: Grid2x2,

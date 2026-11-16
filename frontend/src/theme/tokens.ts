@@ -1,21 +1,37 @@
 import type { TextStyle, ViewStyle } from 'react-native';
 
+// "Town Trip" — RideCore's visual identity, drawn from the yellow town-trip
+// taxis with the green band seen across the Greater Banjul Area.
 export const colors = {
-  brand: '#000000',
-  brandPressed: '#333333',
-  brandSoft: '#EEEEEE',
+  brand: '#0B6B3A', // band green: primary actions
+  brandPressed: '#08552E',
+  brandSoft: '#E3F0E8',
+  taxi: '#FFC20E', // taxi yellow: the one bold highlight per screen
+  taxiPressed: '#EBB000',
+  onTaxi: '#0C2416',
   canvas: '#FFFFFF',
   surface: '#FFFFFF',
-  neutral: '#F3F3F3',
-  text: '#000000',
-  secondary: '#6B6B6B',
-  border: '#E2E2E2',
+  neutral: '#F1F3EE',
+  text: '#0C2416', // deep green ink
+  secondary: '#4A5A50',
+  border: '#DCE1D8',
   error: '#B42332',
   errorSoft: '#FCECEE',
   onBrand: '#FFFFFF',
-  disabled: '#E8E8E8',
-  disabledText: '#6B6B6B',
-  scrim: 'rgba(0, 0, 0, 0.45)',
+  disabled: '#E6E9E3',
+  disabledText: '#5E6B62',
+  scrim: 'rgba(12, 36, 22, 0.5)',
+} as const;
+
+// Static instances of Archivo (SIL OFL 1.1), bundled in assets/fonts.
+// Android needs one family name per weight, so weights live in the family.
+export const fonts = {
+  regular: 'Archivo-Regular',
+  medium: 'Archivo-Medium',
+  semibold: 'Archivo-SemiBold',
+  bold: 'Archivo-Bold',
+  wideBold: 'ArchivoExpanded-ExtraBold',
+  wideBlack: 'ArchivoExpanded-Black',
 } as const;
 
 export const space = {
@@ -28,9 +44,9 @@ export const space = {
   xxxl: 48,
   hero: 64,
 } as const;
-export const radius = { sm: 8, md: 8, lg: 16, sheet: 24, pill: 999 } as const;
+export const radius = { sm: 8, md: 14, lg: 18, sheet: 24, pill: 999 } as const;
 export const size = {
-  touch: 52,
+  touch: 54,
   input: 56,
   icon: 24,
   iconSmall: 20,
@@ -39,37 +55,37 @@ export const size = {
 } as const;
 export const type = {
   display: {
-    fontSize: 44,
-    lineHeight: 50,
-    fontWeight: '700',
+    fontFamily: fonts.wideBlack,
+    fontSize: 40,
+    lineHeight: 44,
     letterSpacing: -1,
   },
   title: {
-    fontSize: 34,
-    lineHeight: 40,
-    fontWeight: '700',
+    fontFamily: fonts.wideBold,
+    fontSize: 30,
+    lineHeight: 36,
     letterSpacing: -0.5,
   },
   heading: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    fontFamily: fonts.wideBold,
+    fontSize: 21,
+    lineHeight: 28,
+    letterSpacing: -0.3,
   },
-  body: { fontSize: 16, lineHeight: 24, fontWeight: '400' },
-  label: { fontSize: 16, lineHeight: 24, fontWeight: '600' },
-  caption: { fontSize: 14, lineHeight: 20, fontWeight: '400' },
+  body: { fontFamily: fonts.regular, fontSize: 16, lineHeight: 24 },
+  label: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 24 },
+  caption: { fontFamily: fonts.regular, fontSize: 14, lineHeight: 20 },
 } satisfies Record<string, TextStyle>;
 export const elevation = {
   floating: {
-    shadowColor: '#18201C',
+    shadowColor: '#0C2416',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.14,
     shadowRadius: 10,
     elevation: 4,
   },
   sheet: {
-    shadowColor: '#18201C',
+    shadowColor: '#0C2416',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 16,

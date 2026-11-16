@@ -8,6 +8,7 @@ import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../components/ui/Text';
 import { createDemoRuntime, type DemoRuntime } from './runtime';
+import { colors } from '../theme/tokens';
 
 const DemoContext = createContext<{
   runtime: DemoRuntime | null;
@@ -31,7 +32,7 @@ export function DemoProvider({ children }: PropsWithChildren) {
       {runtime && (
         <View
           style={{
-            backgroundColor: '#D5E5E3',
+            backgroundColor: colors.taxi,
             paddingHorizontal: 16,
             paddingVertical: 10,
             paddingTop: insets.top + 10,

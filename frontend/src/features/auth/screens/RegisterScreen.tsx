@@ -6,7 +6,7 @@ import { Screen } from '../../../components/layout/Screen';
 import { Text } from '../../../components/ui/Text';
 import { Input } from '../../../components/ui/Input';
 import { Button } from '../../../components/ui/Button';
-import { IconButton } from '../../../components/ui/IconButton';
+import { BrandHeader } from '../../../components/layout/BrandHeader';
 import { PhoneInput, PasswordInput } from '../components/AuthFields';
 import { useSession } from '../../session/SessionProvider';
 import { FormError, registrationPayload } from '../validation';
@@ -80,17 +80,16 @@ export function RegisterScreen({
       </Screen>
     );
   return (
-    <Screen>
-      <IconButton
-        icon="back"
-        label="Go back"
-        onPress={() => navigation.goBack()}
-        disabled={busy}
-      />
-      <Text variant="title" accessibilityRole="header">
-        Create an account
-      </Text>
-      <Text tone="secondary">Your next journey starts with RideCore.</Text>
+    <Screen
+      header={
+        <BrandHeader
+          title="Create an account"
+          subtitle="Your next journey starts with RideCore."
+          onBack={() => navigation.goBack()}
+          backDisabled={busy}
+        />
+      }
+    >
       <Input
         label="First name"
         value={fields.firstName}

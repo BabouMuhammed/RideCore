@@ -17,7 +17,11 @@ export function ListRow({
 }) {
   const content = (
     <>
-      {icon && <Icon name={icon} />}
+      {icon && (
+        <View style={styles.icon}>
+          <Icon name={icon} size={20} />
+        </View>
+      )}
       <View style={styles.copy}>
         <Text variant="label">{title}</Text>
         {subtitle && (
@@ -58,4 +62,12 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   copy: { flex: 1, gap: space.xs },
+  icon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.neutral,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
