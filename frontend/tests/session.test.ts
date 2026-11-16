@@ -53,8 +53,8 @@ test.each(['network', 'server'] as const)(
     expect(h.controller.getSnapshot().stage).toBe('ready');
   },
 );
-test.each(['driver', 'admin', 'unsupported'])(
-  'server role %s cannot enter the rider shell',
+test.each(['admin', 'unsupported'])(
+  'server role %s cannot enter the app',
   async (role) => {
     const h = harness('credential');
     h.api.me.mockResolvedValue({ ...rider, role });
@@ -311,4 +311,15 @@ test('role changes detected after OTP verification remove the private session', 
   });
   expect(h.controller.getSnapshot().stage).toBe('rejected');
   expect(h.saved()).toBeNull();
+});
+test('a driver signs in without loading rider trips', async () => {
+  const h = harness('credential');
+  h.api.me.mockResolvedValue({ ...rider, role: 'driver' });
+  await h.controller.restore();
+  expect(h.controller.getSnapshot()).toMatchObject({
+    stage: 'ready',
+    user: { role: 'driver' },
+    activeRide: null,
+  });
+  expect(h.api.rides).not.toHaveBeenCalled();
 });

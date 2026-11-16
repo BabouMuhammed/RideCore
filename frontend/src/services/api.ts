@@ -136,6 +136,17 @@ export function createTransport(
         if (response.status === 409 && !path.startsWith('/auth/'))
           throw new AppError('changed');
         if (path === '/auth/otp/verify') throw new AppError('otp');
+        // On ride and driver routes a 403 is about this ride or approval,
+        // not the account type, so it must not sign the user out.
+        if (
+          response.status === 403 &&
+          (path.startsWith('/drivers') || path.startsWith('/rides'))
+        )
+          throw new AppError(
+            message === 'Approved driver profile and vehicle required'
+              ? 'approval'
+              : 'forbidden',
+          );
         if (response.status === 403) throw new AppError('role');
         if (response.status === 409 && path === '/auth/register')
           throw new AppError('conflict');

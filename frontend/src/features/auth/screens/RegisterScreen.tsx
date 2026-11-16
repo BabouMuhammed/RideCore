@@ -1,5 +1,5 @@
 import { useRef, useState, type ComponentRef } from 'react';
-import { TextInput } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParams } from '../../../navigation/types';
 import { Screen } from '../../../components/layout/Screen';
@@ -11,10 +11,12 @@ import { PhoneInput, PasswordInput } from '../components/AuthFields';
 import { useSession } from '../../session/SessionProvider';
 import { FormError, registrationPayload } from '../validation';
 import { safeError } from '../../../services/errors';
+import { colors, radius, space } from '../../../theme/tokens';
 export function RegisterScreen({
   navigation,
 }: NativeStackScreenProps<AuthStackParams, 'Register'>) {
   const { session } = useSession();
+  const [role, setRole] = useState<'rider' | 'driver'>('rider');
   const [fields, setFields] = useState({
     firstName: '',
     lastName: '',
@@ -41,7 +43,7 @@ export function RegisterScreen({
     if (submitting.current) return;
     setFailure(undefined);
     try {
-      const payload = registrationPayload(fields);
+      const payload = registrationPayload({ ...fields, role });
       submitting.current = true;
       setBusy(true);
       await session.api.register(payload);
@@ -90,6 +92,38 @@ export function RegisterScreen({
         />
       }
     >
+      <View
+        style={styles.roles}
+        accessibilityRole="radiogroup"
+        accessibilityLabel="I want to"
+      >
+        {(
+          [
+            ['rider', 'Ride', 'Book trips around town'],
+            ['driver', 'Drive', 'Earn by giving rides'],
+          ] as const
+        ).map(([value, label, detail]) => {
+          const checked = role === value;
+          return (
+            <Pressable
+              key={value}
+              accessibilityRole="radio"
+              accessibilityLabel={`${label}: ${detail}`}
+              accessibilityState={{ checked, disabled: busy }}
+              disabled={busy}
+              onPress={() => setRole(value)}
+              style={[styles.role, checked && styles.roleOn]}
+            >
+              <Text variant="heading" style={checked && { color: colors.brand }}>
+                {label}
+              </Text>
+              <Text variant="caption" tone="secondary">
+                {detail}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
       <Input
         label="First name"
         value={fields.firstName}
@@ -164,3 +198,15 @@ export function RegisterScreen({
     </Screen>
   );
 }
+const styles = StyleSheet.create({
+  roles: { flexDirection: 'row', gap: space.md },
+  role: {
+    flex: 1,
+    gap: 2,
+    padding: space.lg,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  roleOn: { borderColor: colors.brand, backgroundColor: colors.brandSoft },
+});

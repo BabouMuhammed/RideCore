@@ -62,6 +62,7 @@ export function registrationPayload(input: {
   email: string;
   phone: string;
   password: string;
+  role?: string;
 }): Registration {
   for (const key of ['firstName', 'lastName'] as const)
     if (!input[key].trim() || input[key].trim().length > 120)
@@ -73,6 +74,6 @@ export function registrationPayload(input: {
     email: email(input.email),
     phone: phone(input.phone),
     password: input.password,
-    role: 'rider',
+    role: input.role === 'driver' ? 'driver' : 'rider',
   };
 }

@@ -58,8 +58,10 @@ export class SessionController {
     this.token = null;
     this.state = { stage: 'starting' };
   }
-  private rider(user: User) {
-    if (user.role !== 'rider' || !user.isActive) throw new AppError('role');
+  // Riders and drivers use this app; administrators do not.
+  private allowed(user: User) {
+    if (!['rider', 'driver'].includes(user.role) || !user.isActive)
+      throw new AppError('role');
   }
   async restore() {
     const epoch = this.begin();
@@ -105,7 +107,13 @@ export class SessionController {
     try {
       const user = await this.api.me(token, this.abort.signal);
       if (!this.current(epoch)) return;
-      this.rider(user);
+      this.allowed(user);
+      if (user.role === 'driver') {
+        // Driver mode loads its own profile and active ride once mounted.
+        if (this.current(epoch))
+          this.emit({ stage: 'ready', user, activeRide: null });
+        return;
+      }
       step = 'rides';
       const rides = await this.api.rides(token, this.abort.signal);
       if (!this.current(epoch)) return;
@@ -227,7 +235,10 @@ export class SessionController {
           });
         throw error;
       }
-      this.rider(user);
+      this.allowed(user);
+      // A role that changes during a session needs a fresh sign-in.
+      if (this.state.stage === 'ready' && this.state.user.role !== user.role)
+        throw new AppError('role');
       if (this.state.stage === 'ready' && !signal.aborted)
         this.emit({ ...this.state, user });
     });

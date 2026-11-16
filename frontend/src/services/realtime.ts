@@ -92,3 +92,70 @@ export const watchRide: RideWatcher = (token, rideId, handlers) => {
     socket.disconnect();
   };
 };
+
+export type DriverLink = {
+  /** Publish the driver's position to the rider and any trusted viewer. */
+  sendLocation(point: Coordinate, heading?: number, speed?: number): void;
+  close(): void;
+};
+/**
+ * The assigned driver's connection to one ride: joins the ride room to hear
+ * rider cancellations, and publishes GPS samples. The backend validates that
+ * this driver is assigned and throttles what it stores.
+ */
+export function connectDriverRide(
+  token: string,
+  rideId: string,
+  handlers: { changed(): void; connection(connected: boolean): void },
+): DriverLink {
+  const socket = io(socketOrigin(), {
+    auth: { token },
+    forceNew: true,
+    autoConnect: false,
+    timeout: 10000,
+  });
+  let closed = false;
+  let joined = false;
+  socket.on('connect', () => {
+    socket
+      .timeout(10000)
+      .emit(
+        'ride:join',
+        { rideId },
+        (error: Error | null, reply: { success?: boolean } | undefined) => {
+          if (closed) return;
+          joined = !error && reply?.success === true;
+          handlers.connection(joined);
+          handlers.changed();
+        },
+      );
+  });
+  socket.on('disconnect', () => {
+    joined = false;
+    handlers.connection(false);
+  });
+  socket.on('connect_error', () => handlers.connection(false));
+  for (const event of rideEvents)
+    socket.on(event, (data: { rideId?: string }) => {
+      if (data?.rideId === rideId) handlers.changed();
+    });
+  socket.connect();
+  return {
+    sendLocation(point, heading, speed) {
+      if (closed || !joined) return;
+      const [longitude, latitude] = coordinate(point);
+      socket.emit('driver:location:update', {
+        rideId,
+        latitude,
+        longitude,
+        ...(heading != null && heading >= 0 && heading < 360 ? { heading } : {}),
+        ...(speed != null && speed >= 0 && speed <= 100 ? { speed } : {}),
+      });
+    },
+    close() {
+      closed = true;
+      socket.removeAllListeners();
+      socket.disconnect();
+    },
+  };
+}

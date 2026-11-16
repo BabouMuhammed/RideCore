@@ -5,8 +5,15 @@ native architecture. Web is for PC review and a minimal read-only recipient view
 
 The real Rider flow includes password authentication, session/active-ride recovery,
 OpenStreetMap addresses and pins, server fares, requests, realtime reconciliation,
-cancellation, sharing, simulated payments, ratings and recent history. The rider
-never calls driver-only transition endpoints.
+cancellation, sharing, simulated payments, ratings and recent history.
+
+Driver accounts get **driver mode** in the same app: onboarding (licence and
+vehicle, approved by an admin), going online and offline with foreground GPS
+(or a map tap when GPS is unavailable), nearby requests checked every few
+seconds, accepting, the trip steps (head to pickup, arrived, start, complete),
+directions in the phone's maps app, live location shared with the rider over
+Socket.IO, cancelling with a reason, rating the rider and today's earnings.
+Register as a driver, or use the `npm run seed:dev` driver account.
 
 See [the current report](docs/RIDER_REPORT.md), [journey guide](docs/RIDER_JOURNEY.md)
 and [native checklist](docs/DEVICE_CHECKLIST.md). Earlier phase reports are historical.
@@ -145,7 +152,7 @@ npm run export:android
 
 `verify:rider` compiles the real mobile adapters/controller and executes actual
 HTTP/socket operations against an unchanged backend with disposable MongoDB data.
-Driver/admin actions exist only in that test harness, never in the application.
+Admin actions exist only in that test harness and the seed script, never in the application.
 It never loads backend `.env` or uses the real database. A local MongoDB binary is
 used when available; otherwise mongodb-memory-server needs a supported download.
 

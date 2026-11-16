@@ -173,11 +173,13 @@ test('restored active ride enters the real requested state without driver lifecy
   expect(await screen.findByText('Connecting to a driver')).toBeOnTheScreen();
   expect(h.controller.getSnapshot()).toMatchObject({ activeRide });
 });
-test('a driver account gets a clear role rejection instead of rider tabs', async () => {
+test('an admin account gets a clear role rejection instead of rider tabs', async () => {
   const h = harness('credential');
-  h.api.me.mockResolvedValue({ ...rider, role: 'driver' });
+  h.api.me.mockResolvedValue({ ...rider, role: 'admin' });
   await render(testApp(h));
-  expect(await screen.findByText('Rider account required')).toBeOnTheScreen();
+  expect(
+    await screen.findByText('Rider or driver account required'),
+  ).toBeOnTheScreen();
   expect(screen.queryByText('Where to?')).not.toBeOnTheScreen();
 });
 

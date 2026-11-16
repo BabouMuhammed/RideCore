@@ -13,6 +13,17 @@ export type RiderTabParams = {
 export type RootStackParams = {
   Auth: NavigatorScreenParams<AuthStackParams> | undefined;
   Rider: NavigatorScreenParams<RiderStackParams> | undefined;
+  Driver: NavigatorScreenParams<DriverStackParams> | undefined;
+};
+
+export type DriverTabParams = {
+  Drive: undefined;
+  Trips: undefined;
+  Account: undefined;
+};
+export type DriverStackParams = {
+  DriverTabs: NavigatorScreenParams<DriverTabParams> | undefined;
+  PhoneVerification: undefined;
 };
 
 export type RiderStackParams = {
