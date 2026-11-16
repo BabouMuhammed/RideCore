@@ -1,4 +1,5 @@
 import { createTransport, record, ride, text, type ApiFetch } from './api';
+import { apiUrl } from './server-config';
 import type { Ride } from './contracts';
 import { AppError } from './errors';
 
@@ -168,7 +169,7 @@ export function publicSnapshot(value: unknown): PublicSnapshot {
   return v as unknown as PublicSnapshot;
 }
 export function createJourneyApi(
-  baseUrl = process.env.EXPO_PUBLIC_API_URL,
+  baseUrl = apiUrl(),
   fetcher?: ApiFetch,
 ) {
   const call = createTransport(baseUrl, fetcher);

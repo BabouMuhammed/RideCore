@@ -3,6 +3,7 @@ export type AuthStackParams = {
   Welcome: undefined;
   SignIn: { created?: boolean; email?: string } | undefined;
   Register: undefined;
+  ServerSettings: undefined;
 };
 export type RiderTabParams = {
   Home: { service?: import('../services/journey-api').Category } | undefined;

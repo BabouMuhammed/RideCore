@@ -47,7 +47,8 @@ Maps need no account or key. Optionally point these at self-hosted servers:
 OpenStreetMap services, which suit development and demonstration.
 The API URL ends in `/api` and uses the backend's unchanged port **5050**. The
 Android device must reach that host. An emulator commonly uses 10.0.2.2 to reach
-the PC; physical devices require a reachable host address. Release URLs use HTTPS.
+the PC; physical devices require a reachable host address. Release builds use
+HTTPS, except for local-network addresses (see the phone demo section).
 
 The backend's existing `CORS_ORIGIN` must match the browser preview/viewer origin.
 A PowerShell health request does not prove browser CORS is correct. Restart the
@@ -122,6 +123,33 @@ eas build --platform android --profile development
 Local development still uses logical Git commits. No VCS applies only to archive
 packaging. Configure runtime variables locally/EAS and private build credentials
 through secure build environment settings. Development clients load JS from Metro.
+
+## Phone demo on local Wi-Fi (real system)
+
+For a live demonstration on phones without deploying the backend, build the
+`local-demo` APK once. It runs the real system (no demo mode) and adds a
+**Server address** setting on the welcome screen, so the phones can follow the
+laptop whatever Wi-Fi you are on:
+
+```powershell
+eas build --platform android --profile local-demo
+```
+
+On the day:
+
+1. Connect the laptop and phones to the same Wi-Fi or phone hotspot.
+2. Start the backend (`npm run dev` in `backend`); run `npm run seed:dev` once.
+3. Allow the API through Windows Firewall (once, in an administrator PowerShell):
+   `New-NetFirewallRule -DisplayName "RideCore API" -Direction Inbound -LocalPort 5050 -Protocol TCP -Action Allow`
+4. Find the laptop's address with `ipconfig` (the IPv4 Address, e.g. 192.168.1.20).
+5. On each phone, tap **Server** on the welcome screen, enter that address and
+   choose **Check and save**. Sign in as the rider on one phone and the driver
+   on another.
+
+Release builds accept plain `http://` only for local-network addresses
+(localhost, 10.x, 172.16-31.x, 192.168.x, `.local`); any public server must
+use `https://`. The server setting exists only in builds made with
+`EXPO_PUBLIC_ALLOW_SERVER_SETTING=true`.
 
 ## Shareable demo APK
 

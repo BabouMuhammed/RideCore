@@ -41,6 +41,9 @@ const config: ExpoConfig = {
       },
     ],
     '@maplibre/maplibre-react-native',
+    // Lets demo builds reach a laptop backend over plain http on the local
+    // network. The app itself refuses plain http to any public address.
+    ['expo-build-properties', { android: { usesCleartextTraffic: true } }],
     [
       'expo-location',
       {

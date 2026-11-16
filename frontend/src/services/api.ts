@@ -6,6 +6,7 @@ import type {
   RiderApi,
   User,
 } from './contracts';
+import { acceptableApiUrl, apiUrl } from './server-config';
 import { rideStatuses } from './contracts';
 import { AppError } from './errors';
 type RecordValue = Record<string, unknown>;
@@ -55,7 +56,7 @@ export type ApiFetch = (
   options?: RequestInit,
 ) => Promise<Response>;
 export function createTransport(
-  baseUrl = process.env.EXPO_PUBLIC_API_URL,
+  baseUrl = apiUrl(),
   fetcher: ApiFetch = (url, options) => fetch(url, options),
 ) {
   async function call(
@@ -66,23 +67,10 @@ export function createTransport(
     signal?: AbortSignal,
   ): Promise<unknown> {
     if (!baseUrl) throw new AppError('configuration');
-    const normalizedBase = baseUrl.trim().replace(/\/+$/, '');
-    let url: URL;
-    try {
-      url = new URL(normalizedBase);
-    } catch {
-      throw new AppError('configuration');
-    }
-    if (
-      !['http:', 'https:'].includes(url.protocol) ||
-      url.username ||
-      url.password ||
-      url.search ||
-      url.hash ||
-      !url.pathname.endsWith('/api') ||
-      (url.protocol === 'http:' && typeof __DEV__ !== 'undefined' && !__DEV__)
-    )
-      throw new AppError('configuration');
+    // Release builds allow plain http only to the local network (a laptop
+    // on the same Wi-Fi); public addresses must use https.
+    const normalizedBase = acceptableApiUrl(baseUrl);
+    if (!normalizedBase) throw new AppError('configuration');
     const abort = new AbortController();
     const cancel = () => abort.abort();
     signal?.addEventListener('abort', cancel);
@@ -170,7 +158,7 @@ export function createTransport(
   return call;
 }
 export function createApi(
-  baseUrl = process.env.EXPO_PUBLIC_API_URL,
+  baseUrl = apiUrl(),
   fetcher?: ApiFetch,
 ): RiderApi {
   const call = createTransport(baseUrl, fetcher);

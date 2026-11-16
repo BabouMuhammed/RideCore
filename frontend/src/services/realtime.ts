@@ -1,5 +1,6 @@
 import { io } from 'socket.io-client';
 import { coordinate, type Coordinate } from './journey-api';
+import { apiUrl } from './server-config';
 export const rideEvents = [
   'ride:accepted',
   'ride:driver-arriving',
@@ -18,7 +19,7 @@ export type RideWatcher = (
     connection(connected: boolean): void;
   },
 ) => () => void;
-export function socketOrigin(base = process.env.EXPO_PUBLIC_API_URL) {
+export function socketOrigin(base = apiUrl()) {
   if (!base) throw new Error('Missing API configuration');
   return base.trim().replace(/\/api\/?$/, '');
 }

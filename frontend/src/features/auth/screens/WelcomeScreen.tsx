@@ -8,6 +8,7 @@ import { Text } from '../../../components/ui/Text';
 import { Button } from '../../../components/ui/Button';
 import { colors, fonts, size, space } from '../../../theme/tokens';
 import { useDemo } from '../../../demo/DemoProvider';
+import { apiUrl, serverSettingAllowed } from '../../../services/server-config';
 
 export function WelcomeScreen({
   navigation,
@@ -65,6 +66,19 @@ export function WelcomeScreen({
               Try demo
             </Text>
           </Pressable>
+          {serverSettingAllowed && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Server address settings"
+              onPress={() => navigation.navigate('ServerSettings')}
+              hitSlop={8}
+              style={({ pressed }) => [styles.demo, pressed && { opacity: 0.6 }]}
+            >
+              <Text variant="caption" tone="secondary">
+                Server: {(apiUrl() ?? 'not set').replace(/^https?:\/\//, '').replace(/\/api$/, '')}
+              </Text>
+            </Pressable>
+          )}
         </SafeAreaView>
       </ScrollView>
     </SafeAreaView>

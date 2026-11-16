@@ -1,4 +1,5 @@
 import { createTransport, record, type ApiFetch } from './api';
+import { apiUrl } from './server-config';
 import { AppError } from './errors';
 import {
   categories,
@@ -121,7 +122,7 @@ export function riderName(ride: Trip): string | null {
 }
 
 export function createDriverApi(
-  baseUrl = process.env.EXPO_PUBLIC_API_URL,
+  baseUrl = apiUrl(),
   fetcher?: ApiFetch,
 ) {
   const call = createTransport(baseUrl, fetcher);
