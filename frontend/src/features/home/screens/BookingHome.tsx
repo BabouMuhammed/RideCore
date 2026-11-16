@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { RiderHome } from './RiderHome';
+import { useDemo } from '../../../demo/DemoProvider';
+import { DemoMap } from '../../../demo/DemoMap';
+import { VehicleArt } from '../../../components/brand/VehicleArt';
+import { IconButton } from '../../../components/ui/IconButton';
+import { Icon } from '../../../components/ui/Icon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../../components/ui/Text';
 import { Button } from '../../../components/ui/Button';
@@ -15,6 +21,7 @@ import {
   type Coordinate,
   type Estimate,
   type Stop,
+  type ShareGrant,
 } from '../../../services/journey-api';
 import { useJourney } from '../../journey/JourneyProvider';
 import { isActive } from '../../journey/JourneyController';
@@ -25,7 +32,17 @@ import { Receipt } from '../../receipt/Receipt';
 import { safeError } from '../../../services/errors';
 import { colors, elevation, radius, size } from '../../../theme/tokens';
 
-export function BookingHome() {
+export function BookingHome({
+  service,
+  onServiceUsed,
+}: { service?: Category; onServiceUsed?(): void } = {}) {
+  const [planning, setPlanning] = useState(!!service);
+  const [retainedShare, setRetainedShare] = useState<{
+    tripId: string;
+    grant: ShareGrant | null;
+  } | null>(null);
+  const { runtime } = useDemo();
+  const [lastService, setLastService] = useState(service);
   const { controller, state } = useJourney(),
     insets = useSafeAreaInsets();
   const [pickup, setPickup] = useState<Stop | null>(null),
@@ -34,7 +51,7 @@ export function BookingHome() {
       null,
     ),
     [pin, setPin] = useState<Coordinate | null>(null);
-  const [category, setCategory] = useState<Category>('economy'),
+  const [category, setCategory] = useState<Category>(service ?? 'economy'),
     [estimates, setEstimates] = useState<Partial<Record<Category, Estimate>>>(
       {},
     );
@@ -47,7 +64,12 @@ export function BookingHome() {
     points: Coordinate[];
     error?: string;
   }>({ key: '', points: [] });
-  const [maps] = useState(createMapService);
+  const [maps] = useState(() => runtime?.maps ?? createMapService());
+  useEffect(() => {
+    if (service) {
+      onServiceUsed?.();
+    }
+  }, [service, onServiceUsed]);
   const mounted = useRef(true),
     operation = useRef(false);
   useEffect(() => {
@@ -178,18 +200,60 @@ export function BookingHome() {
     setConfirm(false);
     setError(undefined);
   }
+  if (service !== lastService) {
+    setLastService(service);
+    if (service) {
+      setCategory(service);
+      setConfirm(false);
+      setPlanning(true);
+    }
+  }
+  if (!planning && !trip && !state.loading && !state.error) {
+    return (
+      <RiderHome
+        history={state.history}
+        onPlan={(service, recentDestination) => {
+          if (service) setCategory(service);
+          if (recentDestination) {
+            setDestination(recentDestination);
+            setEstimates({});
+            setConfirm(false);
+          }
+          setPlanning(true);
+        }}
+      />
+    );
+  }
   return (
     <View style={styles.root}>
-      <MapCanvas
-        center={pin ?? from?.location.coordinates ?? initialCenter}
-        pins={pins}
-        route={route}
-        onSelect={selecting && !trip && !state.loading ? setPin : undefined}
-      />
+      {runtime ? (
+        <DemoMap
+          center={pin ?? from?.location.coordinates ?? initialCenter}
+          pins={pins}
+          route={route}
+          onSelect={selecting && !trip && !state.loading ? setPin : undefined}
+        />
+      ) : (
+        <MapCanvas
+          center={pin ?? from?.location.coordinates ?? initialCenter}
+          pins={pins}
+          route={route}
+          onSelect={selecting && !trip && !state.loading ? setPin : undefined}
+        />
+      )}
       <View style={[styles.brand, { top: insets.top + 12 }]}>
-        <Text variant="heading" style={{ color: colors.brand }}>
-          RideCore
-        </Text>
+        {!trip && !state.loading ? (
+          <IconButton
+            icon="back"
+            label="Back to home"
+            onPress={() => {
+              setPlanning(false);
+              setSelecting(null);
+            }}
+          />
+        ) : (
+          <Text variant="label">RideCore</Text>
+        )}
       </View>
       <JourneySheet>
         {state.loading ? (
@@ -213,12 +277,41 @@ export function BookingHome() {
         ) : visibleContext === 'cancel' ? (
           <Cancellation onClose={() => setContext(null)} />
         ) : visibleContext === 'share' && trip ? (
-          <SharePanel trip={trip} onClose={() => setContext(null)} />
+          <SharePanel
+            key={trip._id}
+            trip={trip}
+            initialGrant={
+              retainedShare?.tripId === trip._id ? retainedShare.grant : null
+            }
+            onGrantChange={(grant) =>
+              setRetainedShare({ tripId: trip._id, grant })
+            }
+            onClose={() => setContext(null)}
+          />
         ) : trip ? (
           <>
             <Text variant="heading" accessibilityLiveRegion="polite">
               {statusLabels[trip.status]}
             </Text>
+            {runtime && isActive(trip) && (
+              <Button
+                label={
+                  trip.status === 'requested'
+                    ? 'Demo: match a driver'
+                    : trip.status === 'driver_arrived'
+                      ? 'Demo: start ride'
+                      : trip.status === 'in_progress'
+                        ? 'Demo: complete ride'
+                        : 'Demo: advance ride'
+                }
+                variant="secondary"
+                disabled={state.busy}
+                onPress={() => {
+                  runtime.advance(trip._id);
+                  void controller.refresh();
+                }}
+              />
+            )}
             {isActive(trip) && (
               <Text tone="secondary">
                 {state.connected
@@ -254,13 +347,19 @@ export function BookingHome() {
               </Text>
             )}
             {trip.vehicle && (
-              <>
-                <Text>
-                  {trip.vehicle.color} · {trip.vehicle.make}{' '}
-                  {trip.vehicle.model}
-                </Text>
-                <Text variant="label">{trip.vehicle.plateNumber}</Text>
-              </>
+              <View style={styles.driverCard}>
+                <VehicleArt
+                  width={112}
+                  premium={trip.vehicleType === 'comfort'}
+                />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <Text>
+                    {trip.vehicle.color} · {trip.vehicle.make}{' '}
+                    {trip.vehicle.model}
+                  </Text>
+                  <Text variant="label">{trip.vehicle.plateNumber}</Text>
+                </View>
+              </View>
             )}
             {trip.status === 'driver_arrived' && (
               <Text>
@@ -268,8 +367,29 @@ export function BookingHome() {
                 trip.
               </Text>
             )}
-            <ListRow title="Pickup" subtitle={trip.pickup.address} />
-            <ListRow title="Destination" subtitle={trip.destination.address} />
+            {isActive(trip) && trip.status !== 'requested' && !!trip.driver && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Share my ride"
+                onPress={() => setContext('share')}
+                style={styles.shareCard}
+              >
+                <Icon name="share" size={28} />
+                <View style={{ flex: 1, gap: 4 }}>
+                  <Text variant="label">Share my ride</Text>
+                  <Text variant="caption" tone="secondary">
+                    Let friends or family follow your journey
+                  </Text>
+                </View>
+                <Icon name="chevron" size={20} />
+              </Pressable>
+            )}
+            <ListRow icon="pin" title="Pickup" subtitle={trip.pickup.address} />
+            <ListRow
+              icon="pin"
+              title="Destination"
+              subtitle={trip.destination.address}
+            />
             <Text>
               {trip.status === 'completed' ? 'Final fare' : 'Estimated fare'} ·{' '}
               {money(trip.finalFare ?? trip.estimatedFare, trip.currency)}
@@ -288,13 +408,6 @@ export function BookingHome() {
                 onUpdated={() => void controller.refresh()}
               />
             )}
-            {isActive(trip) && trip.status !== 'requested' && (
-              <Button
-                label="Safety and sharing"
-                variant="secondary"
-                onPress={() => setContext('share')}
-              />
-            )}
             {isActive(trip) && trip.status !== 'in_progress' && (
               <Button
                 label="Cancel ride"
@@ -308,6 +421,8 @@ export function BookingHome() {
                 label="Plan another ride"
                 onPress={() => {
                   controller.dismiss();
+                  setRetainedShare(null);
+                  setPlanning(false);
                   setPickup(null);
                   setDestination(null);
                   setEstimates({});
@@ -320,34 +435,68 @@ export function BookingHome() {
           </>
         ) : (
           <>
-            <Text variant="heading">Where to?</Text>
-            <Text tone="secondary">
-              Choose your pickup and destination to find your fare.
+            <Text variant="heading">
+              {estimates[category] ? 'Choose a ride' : 'Plan your ride'}
             </Text>
-            <ListRow
-              title="Pickup"
-              subtitle={pickup?.address ?? 'Choose a pickup point'}
-              onPress={() => choose('pickup')}
-              disabled={working}
-            />
-            <ListRow
-              title="Destination"
-              subtitle={destination?.address ?? 'Search for a place'}
-              onPress={() => choose('destination')}
-              disabled={working}
-            />
+            <View style={styles.routeFields}>
+              <ListRow
+                icon="pin"
+                title="Pickup"
+                subtitle={pickup?.address ?? 'Choose a pickup point'}
+                onPress={() => choose('pickup')}
+                disabled={working}
+              />
+              <ListRow
+                icon="search"
+                title="Destination"
+                subtitle={destination?.address ?? 'Search for a place'}
+                onPress={() => choose('destination')}
+                disabled={working}
+              />
+            </View>
             {categories.map(
               (item) =>
                 estimates[item] && (
-                  <ListRow
+                  <Pressable
                     key={item}
-                    title={(category === item ? '✓ ' : '') + item.toUpperCase()}
-                    subtitle={money(estimates[item]!.estimatedFare)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      (category === item ? '✓ ' : '') +
+                      item.toUpperCase() +
+                      ', ' +
+                      money(estimates[item]!.estimatedFare)
+                    }
+                    accessibilityState={{ selected: category === item }}
+                    style={[
+                      styles.vehicle,
+                      category === item && styles.vehicleSelected,
+                    ]}
                     onPress={() => {
                       setCategory(item);
                       setConfirm(false);
                     }}
-                  />
+                  >
+                    <VehicleArt width={86} premium={item === 'comfort'} />
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text variant="heading">
+                        {item === 'economy'
+                          ? 'RideCore'
+                          : item === 'comfort'
+                            ? 'Comfort'
+                            : 'RideCore XL'}
+                      </Text>
+                      <Text variant="caption" tone="secondary">
+                        {item === 'economy'
+                          ? 'Affordable, everyday rides'
+                          : item === 'comfort'
+                            ? 'A little more comfort'
+                            : 'Extra room for your group'}
+                      </Text>
+                    </View>
+                    <Text variant="label">
+                      {money(estimates[item]!.estimatedFare)}
+                    </Text>
+                  </Pressable>
                 ),
             )}
             {!!estimates[category] && (
@@ -421,6 +570,42 @@ export function BookingHome() {
   );
 }
 const styles = StyleSheet.create({
+  shareCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    backgroundColor: colors.neutral,
+    borderRadius: radius.lg,
+    padding: 20,
+    minHeight: 80,
+  },
+  driverCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    padding: 16,
+    borderRadius: radius.lg,
+    backgroundColor: colors.neutral,
+  },
+  routeFields: {
+    backgroundColor: colors.neutral,
+    borderRadius: radius.md,
+    paddingHorizontal: 16,
+  },
+  vehicle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    borderRadius: radius.lg,
+  },
+  vehicleSelected: {
+    borderColor: colors.brand,
+    backgroundColor: colors.neutral,
+  },
   root: { flex: 1, minHeight: 0, backgroundColor: colors.neutral },
   brand: {
     position: 'absolute',

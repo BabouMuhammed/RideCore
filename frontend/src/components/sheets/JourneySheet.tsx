@@ -7,14 +7,18 @@ export function JourneySheet({ children }: PropsWithChildren) {
   return (
     <BottomSheet
       index={0}
-      snapPoints={['42%', '85%']}
+      snapPoints={['55%', '90%']}
       enableDynamicSizing={false}
       enablePanDownToClose={false}
       topInset={insets.top + 50}
       keyboardBehavior="interactive"
       android_keyboardInputMode="adjustResize"
-      backgroundStyle={{ backgroundColor: colors.surface }}
-      handleIndicatorStyle={{ backgroundColor: colors.border }}
+      backgroundStyle={{
+        backgroundColor: colors.surface,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+      }}
+      handleIndicatorStyle={{ backgroundColor: '#CBCBCB', width: 36 }}
     >
       <BottomSheetScrollView
         keyboardShouldPersistTaps="handled"

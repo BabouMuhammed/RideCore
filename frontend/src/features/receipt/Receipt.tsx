@@ -4,6 +4,7 @@ import { colors, size, radius } from '../../theme/tokens';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
+import { Icon } from '../../components/ui/Icon';
 import type { Payment, Trip } from '../../services/journey-api';
 import { safeError } from '../../services/errors';
 import { useJourney } from '../journey/JourneyProvider';
@@ -109,6 +110,19 @@ export function Receipt({
   return (
     <>
       <Text variant="heading">Trip receipt</Text>
+      <View
+        style={{
+          backgroundColor: colors.neutral,
+          borderRadius: radius.lg,
+          padding: 24,
+          gap: 8,
+        }}
+      >
+        <Text tone="secondary">Your total</Text>
+        <Text variant="display">
+          {money(trip.finalFare ?? trip.estimatedFare, trip.currency)}
+        </Text>
+      </View>
       {!loaded && (
         <Button
           label="Reload payment result"
@@ -183,15 +197,11 @@ export function Receipt({
                   justifyContent: 'center',
                 }}
               >
-                <Text
-                  style={{
-                    fontSize: 30,
-                    lineHeight: 38,
-                    color: value <= rating ? colors.brand : colors.secondary,
-                  }}
-                >
-                  ?
-                </Text>
+                <Icon
+                  name="star"
+                  size={30}
+                  color={value <= rating ? colors.brand : '#B0B0B0'}
+                />
               </Pressable>
             ))}
           </View>

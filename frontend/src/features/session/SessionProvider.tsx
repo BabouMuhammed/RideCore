@@ -10,13 +10,20 @@ import { AppState } from 'react-native';
 import { createApi } from '../../services/api';
 import { credentialStore } from '../../services/credential-store';
 import { SessionController } from './SessionController';
+import { useDemo } from '../../demo/DemoProvider';
 const Context = createContext<SessionController | null>(null);
 export function SessionProvider({
   children,
   controller,
 }: PropsWithChildren<{ controller?: SessionController }>) {
+  const { runtime } = useDemo();
   const [session] = useState(
-    () => controller ?? new SessionController(createApi(), credentialStore),
+    () =>
+      controller ??
+      new SessionController(
+        runtime?.sessionApi ?? createApi(),
+        runtime?.store ?? credentialStore,
+      ),
   );
   useEffect(() => {
     void session.restore();

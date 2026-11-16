@@ -11,6 +11,20 @@ never calls driver-only transition endpoints.
 See [the current report](docs/RIDER_REPORT.md), [journey guide](docs/RIDER_JOURNEY.md)
 and [native checklist](docs/DEVICE_CHECKLIST.md). Earlier phase reports are historical.
 
+## Demo mode
+
+Choose **Try demo** on the welcome screen to explore with a sample account,
+recent trips, an illustrative offline map and sample places and fares. Set
+`EXPO_PUBLIC_DEMO_MODE=true` in `.env.local` and restart Expo to launch directly
+into the demo. The default is `false`.
+
+Book a sample ride and use the **Demo:** buttons to advance through driver
+matching, pickup, the journey and completion. Payments and ratings stay in
+memory. Reloading starts a fresh demo. **Exit demo** returns to the normal
+sign-in/session flow without changing saved credentials. Demo mode makes no
+backend, Mapbox or socket requests, does not use GPS, and cannot create public
+trip links or request real rides.
+
 ## Configure locally
 
 Use the Node version in package.json, then `npm ci`. Create `.env` locally from
@@ -33,6 +47,17 @@ needed. The initial origin mismatch was corrected for the running development pr
 The sharing URL must serve this app at a reachable web origin. Localhost cannot
 serve recipients on another phone. Share capabilities use a URL fragment; the
 recipient branch never reads rider credentials or mounts authenticated bootstrap.
+
+During an assigned active ride, choose **Share my ride**, create a tracking
+link, then send it through the device share menu or copy it in a supported
+browser. The link remains available when the panel is closed and reopened in
+the same trip screen. **Stop sharing this ride** revokes it through the backend.
+After an app restart or an uncertain creation response, stop sharing before
+creating a replacement. The backend controls expiry and ends access when the
+ride completes or is cancelled. Browser previews use the current origin when
+`EXPO_PUBLIC_SHARE_WEB_URL` is absent; native builds need that public URL set.
+In demo mode, **Preview friend's view** shows sample tracking details without
+creating or sending a public link.
 
 Mapbox uses permanent Geocoding v6 because confirmed addresses are stored in rides.
 The account must permit permanent geocoding. Search coverage varies; map pins and
@@ -78,6 +103,18 @@ eas build --platform android --profile development
 Local development still uses logical Git commits. No VCS applies only to archive
 packaging. Configure runtime variables locally/EAS and private build credentials
 through secure build environment settings. Development clients load JS from Metro.
+
+## Shareable demo APK
+
+Latest successful demo build:
+[Expo build](https://expo.dev/accounts/baboumaha/projects/ridecore-rider/builds/5129a871-24b8-4116-b758-727d9f962e73)
+· [Download APK](https://expo.dev/artifacts/eas/orwkejD10b-TFISFkpitjyxElgoteA24CrT_Ubi0TgU.apk).
+
+From `frontend`, run `eas build --platform android --profile demo`. This uses
+the preview environment, enables demo mode explicitly and produces an internally
+distributed APK with bundled JavaScript. Recipients can install it from the EAS
+build link without Expo Go, Metro, a backend connection or a Mapbox key. The demo
+includes sample rides and a tracking preview; it does not send real tracking links.
 
 ## Verify
 

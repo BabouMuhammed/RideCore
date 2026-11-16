@@ -5,7 +5,8 @@ export type AuthStackParams = {
   Register: undefined;
 };
 export type RiderTabParams = {
-  Home: undefined;
+  Home: { service?: import('../services/journey-api').Category } | undefined;
+  Services: undefined;
   Activity: undefined;
   Account: undefined;
 };

@@ -11,21 +11,23 @@ import { useSession } from '../session/SessionProvider';
 import { createJourneyApi } from '../../services/journey-api';
 import { watchRide } from '../../services/realtime';
 import { JourneyController } from './JourneyController';
+import { useDemo } from '../../demo/DemoProvider';
 const Context = createContext<JourneyController | null>(null);
 export function JourneyProvider({
   children,
   controller: provided,
 }: PropsWithChildren<{ controller?: JourneyController }>) {
   const { session, state } = useSession();
+  const { runtime } = useDemo();
   const [controller] = useState(
     () =>
       provided ??
       new JourneyController(
-        createJourneyApi(),
+        runtime?.journeyApi ?? createJourneyApi(),
         (work) => session.run(work),
         state.stage === 'ready' ? state.user._id : '',
         state.stage === 'ready' ? (state.activeRide?._id ?? null) : null,
-        watchRide,
+        runtime?.watch ?? watchRide,
       ),
   );
   useEffect(() => {

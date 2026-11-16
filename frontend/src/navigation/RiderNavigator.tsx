@@ -3,12 +3,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, type IconName } from '../components/ui/Icon';
 import { colors, size, space, type } from '../theme/tokens';
 import { HomeScreen } from '../features/home/screens/HomeScreen';
+import { ServicesScreen } from '../features/home/screens/ServicesScreen';
 import { ActivityScreen } from '../features/activity/screens/ActivityScreen';
 import { AccountScreen } from '../features/account/screens/AccountScreen';
 import type { RiderTabParams } from './types';
 const Tab = createBottomTabNavigator<RiderTabParams>();
 const icons: Record<keyof RiderTabParams, IconName> = {
   Home: 'home',
+  Services: 'services',
   Activity: 'activity',
   Account: 'account',
 };
@@ -35,6 +37,7 @@ export function RiderNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Services" component={ServicesScreen} />
       <Tab.Screen name="Activity" component={ActivityScreen} />
       <Tab.Screen name="Account" component={AccountScreen} />
     </Tab.Navigator>

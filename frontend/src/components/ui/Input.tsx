@@ -34,7 +34,7 @@ export function Input({
               ? colors.error
               : focused
                 ? colors.brand
-                : colors.border,
+                : colors.neutral,
           },
         ]}
       >
@@ -75,8 +75,8 @@ const styles = StyleSheet.create({
   frame: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1.5,
+    backgroundColor: colors.neutral,
+    borderWidth: 2,
     borderRadius: radius.md,
     paddingHorizontal: space.sm,
   },

@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { View } from 'react-native';
+import { Icon } from '../../components/ui/Icon';
+import { colors } from '../../theme/tokens';
 import { Text } from '../../components/ui/Text';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -28,6 +31,18 @@ export function Cancellation({ onClose }: { onClose(): void }) {
   }
   return (
     <>
+      <View
+        style={{
+          backgroundColor: colors.neutral,
+          borderRadius: 28,
+          width: 56,
+          height: 56,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon name="car" size={28} />
+      </View>
       <Text variant="heading">
         {confirm ? 'Cancel this ride?' : 'Why are you cancelling?'}
       </Text>

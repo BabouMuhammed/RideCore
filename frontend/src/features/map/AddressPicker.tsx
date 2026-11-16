@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 import * as Location from 'expo-location';
+import { useDemo } from '../../demo/DemoProvider';
+import { demoPlaces } from '../../demo/runtime';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
 import { Button } from '../../components/ui/Button';
 import { ListRow } from '../../components/ui/ListRow';
+import { Icon } from '../../components/ui/Icon';
 import { createMapService, makeStop } from '../../services/mapbox';
 import type { Coordinate, Stop } from '../../services/journey-api';
 import { safeError } from '../../services/errors';
@@ -21,6 +24,7 @@ export function AddressPicker({
   onConfirm(stop: Stop): void;
   onClose(): void;
 }) {
+  const { runtime } = useDemo();
   const [query, setQuery] = useState('');
   const [draft, setDraft] = useState({ key: '', value: '' });
   const [lookup, setLookup] = useState<{
@@ -33,7 +37,7 @@ export function AddressPicker({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState<string>();
   const [denied, setDenied] = useState(false);
-  const [maps] = useState(createMapService);
+  const [maps] = useState(() => runtime?.maps ?? createMapService());
   const pending = useRef<AbortController | null>(null);
   const pinKey = JSON.stringify(pin);
   const address =
@@ -86,6 +90,10 @@ export function AddressPicker({
     }
   }
   async function locate() {
+    if (runtime) {
+      onPin(demoPlaces[0].location.coordinates);
+      return;
+    }
     pending.current?.abort();
     const abort = new AbortController();
     pending.current = abort;
@@ -120,6 +128,8 @@ export function AddressPicker({
       </Text>
       <Input
         label="Search address or landmark"
+        placeholder={kind === 'pickup' ? 'Enter pickup location' : 'Where to?'}
+        prefix={<Icon name="search" size={20} />}
         value={query}
         onChangeText={setQuery}
         returnKeyType="search"
@@ -133,11 +143,22 @@ export function AddressPicker({
         onPress={() => void search()}
       />
       <Button
-        label="Use my current location"
+        label={runtime ? 'Use demo pickup location' : 'Use my current location'}
         variant="secondary"
         disabled={busy}
         onPress={() => void locate()}
       />
+      {runtime &&
+        !searched &&
+        demoPlaces.map((stop) => (
+          <ListRow
+            key={stop.address}
+            icon="pin"
+            title={stop.address}
+            subtitle="Demo place"
+            onPress={() => onConfirm(stop)}
+          />
+        ))}
       {denied && (
         <>
           <Text>
@@ -162,6 +183,7 @@ export function AddressPicker({
       {results.map((stop, index) => (
         <ListRow
           key={index}
+          icon="pin"
           title={stop.address}
           onPress={() => onConfirm(stop)}
         />

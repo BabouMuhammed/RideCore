@@ -7,6 +7,7 @@ import {
 } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { Platform, Share } from 'react-native';
 import { SessionProvider } from '../src/features/session/SessionProvider';
 import { JourneyProvider } from '../src/features/journey/JourneyProvider';
 import {
@@ -66,6 +67,7 @@ test('real booking interactions select addresses, request server fares and creat
   const h = fixture();
   await mount(h, <BookingHome />);
   expect(await screen.findByText('Where to?')).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: 'Where to?' }));
   await waitFor(() => expect(h.controller.getSnapshot().loading).toBe(false));
   for (const kind of ['Pickup', 'Destination']) {
     await fireEvent.press(
@@ -234,6 +236,154 @@ test('share URLs use a bearer fragment; revocation stays available even if no lo
     await screen.findByText('Sharing has been stopped for this ride.'),
   ).toBeOnTheScreen();
 });
+test('Share my ride sends one backend link, retains it when reopened, and revokes it', async () => {
+  const previous = process.env.EXPO_PUBLIC_SHARE_WEB_URL;
+  process.env.EXPO_PUBLIC_SHARE_WEB_URL = 'https://tracking.example.test';
+  const send = jest
+    .spyOn(Share, 'share')
+    .mockResolvedValue({ action: Share.sharedAction, activityType: undefined });
+  try {
+    const h = fixture();
+    const active = {
+      ...trip,
+      status: 'accepted' as const,
+      driver: 'e'.repeat(24),
+    };
+    h.api.list.mockResolvedValue([active]);
+    h.api.detail.mockResolvedValue(active);
+    h.api.share.mockResolvedValue({
+      token: 's'.repeat(43),
+      sharePath: '/track/' + 's'.repeat(43),
+      expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    });
+    await mount(h, <BookingHome />);
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Share my ride' }),
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Create tracking link' }),
+    );
+    await fireEvent.press(
+      await screen.findByRole('button', { name: 'Send tracking link' }),
+    );
+    expect(send).toHaveBeenCalledWith({
+      message:
+        'Follow my RideCore ride. No account needed: https://tracking.example.test/#track=' +
+        's'.repeat(43),
+    });
+    expect(h.api.share).toHaveBeenCalledWith(
+      'test-only-credential',
+      trip._id,
+      expect.any(AbortSignal),
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Back to trip' }));
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Share my ride' }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Send tracking link' }),
+    ).toBeOnTheScreen();
+    expect(h.api.share).toHaveBeenCalledTimes(1);
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Stop sharing this ride' }),
+    );
+    expect(
+      await screen.findByText('Sharing has been stopped for this ride.'),
+    ).toBeOnTheScreen();
+    expect(h.api.revoke).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole('button', { name: 'Send tracking link' }),
+    ).not.toBeOnTheScreen();
+  } finally {
+    send.mockRestore();
+    if (previous === undefined) delete process.env.EXPO_PUBLIC_SHARE_WEB_URL;
+    else process.env.EXPO_PUBLIC_SHARE_WEB_URL = previous;
+  }
+});
+
+test('browser tracking links can be copied without creating another grant', async () => {
+  const previous = process.env.EXPO_PUBLIC_SHARE_WEB_URL;
+  const originalNavigator = Object.getOwnPropertyDescriptor(
+    globalThis,
+    'navigator',
+  );
+  const platform = jest.replaceProperty(Platform, 'OS', 'web');
+  const writeText = jest.fn().mockResolvedValue(undefined);
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: { clipboard: { writeText } },
+  });
+  process.env.EXPO_PUBLIC_SHARE_WEB_URL = 'https://tracking.example.test';
+  try {
+    const h = fixture();
+    await mount(
+      h,
+      <SharePanel
+        trip={{ ...trip, status: 'accepted' }}
+        initialGrant={{
+          token: 's'.repeat(43),
+          sharePath: '/track/' + 's'.repeat(43),
+          expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        }}
+        onClose={jest.fn()}
+      />,
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Copy tracking link' }),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      'https://tracking.example.test/#track=' + 's'.repeat(43),
+    );
+    expect(await screen.findByText(/Tracking link copied/)).toBeOnTheScreen();
+    expect(h.api.share).not.toHaveBeenCalled();
+  } finally {
+    platform.restore();
+    if (originalNavigator)
+      Object.defineProperty(globalThis, 'navigator', originalNavigator);
+    else Reflect.deleteProperty(globalThis, 'navigator');
+    if (previous === undefined) delete process.env.EXPO_PUBLIC_SHARE_WEB_URL;
+    else process.env.EXPO_PUBLIC_SHARE_WEB_URL = previous;
+  }
+});
+
+test('uncertain share creation requires revocation before retrying without sending a guessed link', async () => {
+  const previous = process.env.EXPO_PUBLIC_SHARE_WEB_URL;
+  process.env.EXPO_PUBLIC_SHARE_WEB_URL = 'https://tracking.example.test';
+  try {
+    const h = fixture();
+    h.api.share.mockRejectedValueOnce(new AppError('network'));
+    await mount(
+      h,
+      <SharePanel trip={{ ...trip, status: 'accepted' }} onClose={jest.fn()} />,
+    );
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Create tracking link' }),
+    );
+    expect(
+      await screen.findByText(
+        /We could not confirm whether the link was created/,
+      ),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Create tracking link' }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Send tracking link' }),
+    ).not.toBeOnTheScreen();
+    expect(h.api.share).toHaveBeenCalledTimes(1);
+    await fireEvent.press(
+      screen.getByRole('button', { name: 'Stop sharing this ride' }),
+    );
+    await screen.findByText('Sharing has been stopped for this ride.');
+    expect(
+      screen.getByRole('button', { name: 'Create tracking link' }),
+    ).not.toBeDisabled();
+  } finally {
+    if (previous === undefined) delete process.env.EXPO_PUBLIC_SHARE_WEB_URL;
+    else process.env.EXPO_PUBLIC_SHARE_WEB_URL = previous;
+  }
+});
+
 test('an uncertain payment response recovers the server record rather than claiming failure or paying again', async () => {
   const h = fixture();
   h.api.payment.mockResolvedValueOnce(null).mockResolvedValueOnce({
@@ -281,7 +431,7 @@ test('late completed state replaces active sheet without offering active-only ac
     screen.queryByRole('button', { name: 'Cancel ride' }),
   ).not.toBeOnTheScreen();
   expect(
-    screen.queryByRole('button', { name: 'Safety and sharing' }),
+    screen.queryByRole('button', { name: 'Share my ride' }),
   ).not.toBeOnTheScreen();
 });
 test('journey bootstrap shows loading instead of offering booking before active-ride discovery', async () => {
@@ -303,6 +453,7 @@ test('authoritative active-ride reconciliation supersedes an open address-select
   const h = fixture();
   await mount(h, <BookingHome />);
   await waitFor(() => expect(h.controller.getSnapshot().loading).toBe(false));
+  await fireEvent.press(screen.getByRole('button', { name: 'Where to?' }));
   await fireEvent.press(screen.getByRole('button', { name: /^Pickup,/ }));
   expect(screen.getByLabelText('Search address or landmark')).toBeOnTheScreen();
   h.api.list.mockResolvedValue([trip]);

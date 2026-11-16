@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { VehicleArt } from '../../../components/brand/VehicleArt';
+import { colors, radius } from '../../../theme/tokens';
 import { useFocusEffect } from '@react-navigation/native';
 import { Screen } from '../../../components/layout/Screen';
 import { Text } from '../../../components/ui/Text';
@@ -43,13 +46,26 @@ function Activity() {
           </Text>
           {state.loading && <Text>Loading rides…</Text>}
           {!state.loading && !state.history.length && !state.error && (
-            <Text>
-              You haven’t requested a ride yet. Start a journey from Home.
-            </Text>
+            <View
+              style={{
+                backgroundColor: colors.neutral,
+                borderRadius: radius.lg,
+                padding: 28,
+                gap: 12,
+                alignItems: 'center',
+              }}
+            >
+              <VehicleArt width={170} />
+              <Text variant="heading">Your next journey starts here</Text>
+              <Text tone="secondary" style={{ textAlign: 'center' }}>
+                You haven’t requested a ride yet. Start a journey from Home.
+              </Text>
+            </View>
           )}
           {state.history.map((trip) => (
             <ListRow
               key={trip._id}
+              icon="car"
               title={trip.destination.address}
               subtitle={`${statusLabels[trip.status]} · ${money(trip.finalFare ?? trip.estimatedFare, trip.currency)} · ${new Date(trip.requestedAt).toLocaleDateString()}`}
               onPress={() => setSelected(trip._id)}

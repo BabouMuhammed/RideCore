@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: size.contentMax,
     alignSelf: 'center',
-    padding: space.xl,
-    gap: space.xl,
+    padding: space.lg + 4,
+    gap: space.lg + 4,
   },
 });

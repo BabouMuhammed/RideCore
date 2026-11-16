@@ -8,17 +8,20 @@ import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { navigationTheme } from '../navigation/theme';
 import { AppErrorBoundary } from './AppErrorBoundary';
+import { DemoProvider } from '../demo/DemoProvider';
 export function AppProviders({ children }: PropsWithChildren) {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <AppErrorBoundary>
-          <NavigationContainer theme={navigationTheme}>
-            <BottomSheetModalProvider>
-              <StatusBar style="dark" />
-              <SessionProvider>{children}</SessionProvider>
-            </BottomSheetModalProvider>
-          </NavigationContainer>
+          <DemoProvider>
+            <NavigationContainer theme={navigationTheme}>
+              <BottomSheetModalProvider>
+                <StatusBar style="dark" />
+                <SessionProvider>{children}</SessionProvider>
+              </BottomSheetModalProvider>
+            </NavigationContainer>
+          </DemoProvider>
         </AppErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>

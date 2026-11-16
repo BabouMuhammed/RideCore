@@ -67,6 +67,17 @@ test('the authenticated rider shell connects real Home, Activity and Account', a
     </SafeAreaProvider>,
   );
   expect(await screen.findByText('Where to?')).toBeOnTheScreen();
+  for (let visit = 0; visit < 2; visit++) {
+    await user.press(
+      screen.getByRole(Platform.OS === 'ios' ? 'button' : 'tab', {
+        name: /Services/,
+      }),
+    );
+    await user.press(await screen.findByRole('button', { name: 'Comfort' }));
+    expect(await screen.findByText('Plan your ride')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Back to home' }));
+    expect(await screen.findByText('Where to?')).toBeOnTheScreen();
+  }
   await user.press(
     screen.getByRole(Platform.OS === 'ios' ? 'button' : 'tab', {
       name: /Activity/,
