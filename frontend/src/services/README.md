@@ -8,7 +8,8 @@ Native credential-store.ts retains device-only Expo SecureStore. The .web.ts
 adapter uses localStorage for development/UI review only. Neither grants identity;
 SessionController validates credentials and role through the backend.
 
-`mapbox.ts` supplies permanent geocoding and planned street geometry. Coordinates
+`geo.ts` supplies free OpenStreetMap geocoding (Nominatim) and planned street
+geometry (OSRM), with no account or key. Coordinates
 remain internal; backend fares are authoritative. `realtime.ts` authenticates
 Socket.IO, rejoins rooms and forwards validated location samples/status hints.
 Controllers reconcile ride status through REST, with regular fallback polling.

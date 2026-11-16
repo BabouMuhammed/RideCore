@@ -4,7 +4,7 @@ Android-first React Native + Expo + TypeScript mobile application. iOS shares th
 native architecture. Web is for PC review and a minimal read-only recipient view.
 
 The real Rider flow includes password authentication, session/active-ride recovery,
-Mapbox addresses and pins, server fares, requests, realtime reconciliation,
+OpenStreetMap addresses and pins, server fares, requests, realtime reconciliation,
 cancellation, sharing, simulated payments, ratings and recent history. The rider
 never calls driver-only transition endpoints.
 
@@ -22,7 +22,7 @@ Book a sample ride and use the **Demo:** buttons to advance through driver
 matching, pickup, the journey and completion. Payments and ratings stay in
 memory. Reloading starts a fresh demo. **Exit demo** returns to the normal
 sign-in/session flow without changing saved credentials. Demo mode makes no
-backend, Mapbox or socket requests, does not use GPS, and cannot create public
+backend, map-service or socket requests, does not use GPS, and cannot create public
 trip links or request real rides.
 
 ## Configure locally
@@ -31,10 +31,13 @@ Use the Node version in package.json, then `npm ci`. Create `.env` locally from
 `.env.example` only if absent. Configure these public runtime names locally:
 
 - `EXPO_PUBLIC_API_URL`
-- `EXPO_PUBLIC_MAPBOX_ACCESS_TOKEN`
 - `EXPO_PUBLIC_SHARE_WEB_URL`
+- `EXPO_PUBLIC_DEMO_MODE` (`false` for the real system)
 
-Never paste actual token values into source, documentation, messages or commits.
+Maps need no account or key. Optionally point these at self-hosted servers:
+`EXPO_PUBLIC_MAP_TILE_URL` (a `{z}/{x}/{y}` tile URL), `EXPO_PUBLIC_GEOCODER_URL`
+(Nominatim) and `EXPO_PUBLIC_ROUTER_URL` (OSRM). They default to the public
+OpenStreetMap services, which suit development and demonstration.
 The API URL ends in `/api` and uses the backend's unchanged port **5050**. The
 Android device must reach that host. An emulator commonly uses 10.0.2.2 to reach
 the PC; physical devices require a reachable host address. Release URLs use HTTPS.
@@ -59,12 +62,13 @@ ride completes or is cancelled. Browser previews use the current origin when
 In demo mode, **Preview friend's view** shows sample tracking details without
 creating or sending a public link.
 
-Mapbox uses permanent Geocoding v6 because confirmed addresses are stored in rides.
-The account must permit permanent geocoding. Search coverage varies; map pins and
-user-entered landmarks remain available. Directions supplies planned street
-geometry only; backend fares remain authoritative. No driver ETA is invented.
-If native SDK downloads require a private credential, configure build-time
-`RNMAPBOX_MAPS_DOWNLOAD_TOKEN` securely. Never put it in an EXPO_PUBLIC variable.
+Maps use free, open-source services, as set out in the project proposal: MapLibre
+renders OpenStreetMap tiles, Nominatim finds and names places (limited to The
+Gambia) and OSRM supplies planned street geometry. Search coverage varies; map
+pins and user-entered landmarks remain available. Route lines are for
+orientation only; backend fares remain authoritative. No driver ETA is invented.
+Keep the OpenStreetMap attribution visible, and stay within the public servers'
+fair-use limits (Nominatim allows about one request per second).
 
 ## Run
 
@@ -73,6 +77,14 @@ In `backend`, retain its private environment and MongoDB replica set configurati
 ```powershell
 npm ci
 npm run dev
+```
+
+In a second terminal, still in `backend`, create the development accounts once
+(a rider, an approved driver who is online in Serrekunda, and an admin). It goes
+through the real API and is safe to repeat; it refuses to run in production:
+
+```powershell
+npm run seed:dev
 ```
 
 In `frontend`:
@@ -84,12 +96,12 @@ npm start -- --web --port 8081
 
 Restart Metro after environment/dependency changes; use `--clear` for stale module
 caches. For a complete Android SDK/JDK/device setup use `npm run android`. For an
-installed EAS development APK use `npm start -- --lan`. Expo Go cannot provide
-native Mapbox. No source fallback to localhost, fixed machine IP or mock API exists.
+installed EAS development APK use `npm start -- --lan`. Expo Go cannot load
+the native MapLibre map; use the development build. No source fallback to localhost, fixed machine IP or mock API exists.
 
 ## Android development build
 
-Existing EAS project/configuration and SecureStore/Mapbox plugins are preserved.
+Existing EAS project/configuration and SecureStore/MapLibre plugins are configured.
 Location adds foreground permission only. From the frontend directory use the
 inspected frontend-only upload mode, excluding Git metadata, backend data, private
 environments, generated native output and verification/browser artifacts:
@@ -113,7 +125,7 @@ Latest successful demo build:
 From `frontend`, run `eas build --platform android --profile demo`. This uses
 the preview environment, enables demo mode explicitly and produces an internally
 distributed APK with bundled JavaScript. Recipients can install it from the EAS
-build link without Expo Go, Metro, a backend connection or a Mapbox key. The demo
+build link without Expo Go, Metro, a backend connection. The demo
 includes sample rides and a tracking preview; it does not send real tracking links.
 
 ## Verify
@@ -148,5 +160,5 @@ is no definitive backend no-driver/timeout event, so open requests truthfully ke
 waiting or offer cancellation. History exposes the backend's latest-50 window.
 
 Current dependency advisories remain unresolved; do not use audit fix --force.
-Passing tests/exports does not certify native device behavior or Mapbox account
-access. The report distinguishes verified implementation from demonstration setup.
+Passing tests/exports does not certify native device behavior.
+ The report distinguishes verified implementation from demonstration setup.

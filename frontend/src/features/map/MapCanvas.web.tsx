@@ -1,50 +1,52 @@
 import { createElement, useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import * as maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { View, StyleSheet } from 'react-native';
 import { Text } from '../../components/ui/Text';
-import { mapToken } from '../../services/mapbox';
 import { colors } from '../../theme/tokens';
+import { osmStyle } from './osmStyle';
 import type { MapCanvasProps } from './MapCanvas.types';
 
-// PC review adapter only. The product uses the native Mapbox SDK on Android/iOS.
+// Browser adapter (PC review and the public trip viewer). Native uses
+// MapLibre React Native with the same OpenStreetMap style.
 export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
   const host = useRef<HTMLDivElement>(null),
-    map = useRef<mapboxgl.Map | null>(null);
+    map = useRef<maplibregl.Map | null>(null);
   const select = useRef(onSelect);
   useEffect(() => {
     select.current = onSelect;
   }, [onSelect]);
   const [ready, setReady] = useState(false),
     [failed, setFailed] = useState(false);
-  const token = mapToken();
   const initial = useRef(center);
   useEffect(() => {
-    if (!host.current || !token) return;
-    let instance: mapboxgl.Map | undefined;
+    if (!host.current) return;
+    let instance: maplibregl.Map | undefined;
     // Wait for the browser to lay out the native-web host before creating WebGL.
     const frame = requestAnimationFrame(() => {
       if (!host.current) return;
       try {
-        instance = new mapboxgl.Map({
+        instance = new maplibregl.Map({
           container: host.current,
-          accessToken: token,
-          style: 'mapbox://styles/mapbox/light-v11',
+          style: osmStyle(),
           center: initial.current,
           zoom: 13,
           attributionControl: false,
-          logoPosition: 'top-right',
         });
         map.current = instance;
         instance.addControl(
-          new mapboxgl.AttributionControl({ compact: true }),
+          new maplibregl.AttributionControl({ compact: true }),
           'top-right',
         );
         instance.on('load', () => setReady(true));
         instance.on('click', (event) =>
           select.current?.([event.lngLat.lng, event.lngLat.lat]),
         );
-        instance.on('error', () => setFailed(true));
+        // Individual tile errors are normal on a slow link; only a style
+        // failure before the first load means the map is unusable.
+        instance.on('error', () => {
+          if (!instance?.loaded()) setFailed(true);
+        });
       } catch {
         setFailed(true);
       }
@@ -54,8 +56,7 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
       instance?.remove();
       map.current = null;
     };
-    // Map instance persists; changes are handled below.
-  }, [token]);
+  }, []);
   useEffect(() => {
     const instance = map.current;
     if (!instance || !ready) return;
@@ -63,22 +64,25 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
       const label = document.createElement('span');
       label.textContent = pin.label;
       Object.assign(label.style, {
-        backgroundColor: colors.brand,
-        color: 'white',
-        padding: '7px',
+        backgroundColor: pin.id === 'driver' ? colors.taxi : colors.brand,
+        color: pin.id === 'driver' ? colors.onTaxi : colors.onBrand,
+        padding: '6px 9px',
         borderRadius: '12px',
         border: '2px solid white',
+        fontFamily: 'Archivo-SemiBold, system-ui, sans-serif',
+        fontSize: '13px',
+        boxShadow: '0 2px 6px rgba(12,36,22,0.25)',
       });
-      return new mapboxgl.Marker({ element: label })
+      return new maplibregl.Marker({ element: label })
         .setLngLat(pin.point)
         .addTo(instance);
     });
     const points = [...pins.map((p) => p.point), ...(route ?? [])];
     if (points.length > 1) {
-      const bounds = new mapboxgl.LngLatBounds();
+      const bounds = new maplibregl.LngLatBounds();
       points.forEach((p) => bounds.extend(p));
       instance.fitBounds(bounds, {
-        padding: { top: 65, bottom: 240, left: 40, right: 40 },
+        padding: { top: 70, bottom: 260, left: 40, right: 40 },
         maxZoom: 15,
       });
     } else instance.easeTo({ center, zoom: 14 });
@@ -88,7 +92,7 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
       geometry: { type: 'LineString', coordinates: route ?? [] },
     };
     const source = instance.getSource('route') as
-      mapboxgl.GeoJSONSource | undefined;
+      maplibregl.GeoJSONSource | undefined;
     if (source) source.setData(data);
     else {
       instance.addSource('route', { type: 'geojson', data });
@@ -96,25 +100,22 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
         id: 'route',
         type: 'line',
         source: 'route',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': colors.brand, 'line-width': 5 },
       });
     }
     return () => markers.forEach((marker) => marker.remove());
   }, [center, pins, route, ready]);
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.neutral }]}>
       {createElement('div', {
         ref: host,
         style: { position: 'absolute', inset: 0 },
         'aria-label': 'RideCore street map',
       })}
-      {(!token || failed) && (
+      {failed && (
         <View style={{ padding: 24, paddingTop: 80 }}>
-          <Text>
-            {!token
-              ? 'Street map is unavailable. Please try again later.'
-              : 'The map could not load. Check your connection.'}
-          </Text>
+          <Text>The map could not load. Check your connection.</Text>
         </View>
       )}
     </View>

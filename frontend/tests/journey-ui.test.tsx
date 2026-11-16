@@ -22,8 +22,8 @@ import { harness, rider, deferred } from './fixtures';
 import type { Trip } from '../src/services/journey-api';
 import { journeyApi, tripFixture as trip } from './journey-fixtures';
 import { AppError } from '../src/services/errors';
-jest.mock('../src/services/mapbox', () => ({
-  ...jest.requireActual('../src/services/mapbox'),
+jest.mock('../src/services/geo', () => ({
+  ...jest.requireActual('../src/services/geo'),
   createMapService: () => {
     const { tripFixture } = jest.requireActual('./journey-fixtures');
     return {

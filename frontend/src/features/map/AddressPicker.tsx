@@ -8,7 +8,7 @@ import { Text } from '../../components/ui/Text';
 import { Button } from '../../components/ui/Button';
 import { ListRow } from '../../components/ui/ListRow';
 import { Icon } from '../../components/ui/Icon';
-import { createMapService, makeStop } from '../../services/mapbox';
+import { createMapService, makeStop } from '../../services/geo';
 import type { Coordinate, Stop } from '../../services/journey-api';
 import { safeError } from '../../services/errors';
 export function AddressPicker({

@@ -2,7 +2,7 @@
 
 - auth/session: existing password auth, Gambia numbers, optional mock OTP and
   server-validated startup/local logout.
-- map: native Mapbox, PC web adapter, foreground permission, address/landmark
+- map: MapLibre with OpenStreetMap tiles (native and web adapters), foreground permission, address/landmark
   search, current-location selection and pins.
 - journey: authoritative controller/provider, state labels, contextual cancellation.
 - home: persistent map and state-dependent booking/active/completion sheet.

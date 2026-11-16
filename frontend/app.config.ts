@@ -40,7 +40,7 @@ const config: ExpoConfig = {
         imageWidth: 120,
       },
     ],
-    '@rnmapbox/maps',
+    '@maplibre/maplibre-react-native',
     [
       'expo-location',
       {

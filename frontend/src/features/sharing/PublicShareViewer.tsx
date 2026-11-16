@@ -9,7 +9,7 @@ import {
 import { socketOrigin } from '../../services/realtime';
 import { safeError, AppError } from '../../services/errors';
 import { MapCanvas } from '../map/MapCanvas';
-import { initialCenter } from '../../services/mapbox';
+import { initialCenter } from '../../services/geo';
 import { JourneySheet } from '../../components/sheets/JourneySheet';
 import { Text } from '../../components/ui/Text';
 import { Button } from '../../components/ui/Button';

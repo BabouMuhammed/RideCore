@@ -14,7 +14,7 @@ import { Loading } from '../../../components/ui/Loading';
 import { JourneySheet } from '../../../components/sheets/JourneySheet';
 import { MapCanvas } from '../../map/MapCanvas';
 import { AddressPicker } from '../../map/AddressPicker';
-import { createMapService, initialCenter } from '../../../services/mapbox';
+import { createMapService, initialCenter } from '../../../services/geo';
 import {
   categories,
   type Category,
@@ -369,14 +369,21 @@ export function BookingHome({
                         {trip.driverDetails.firstName}
                       </Text>
                     )}
-                    {trip.driverDetails?.rating != null && (
-                      <View style={styles.rating}>
-                        <Icon name="star" size={15} color={colors.secondary} />
+                    {trip.driverDetails &&
+                      // The backend reports 0 until a driver's first rating;
+                      // showing "0.0" would read as a very poor score.
+                      (trip.driverDetails.rating ? (
+                        <View style={styles.rating}>
+                          <Icon name="star" size={15} color={colors.secondary} />
+                          <Text variant="caption" tone="secondary">
+                            {trip.driverDetails.rating.toFixed(1)}
+                          </Text>
+                        </View>
+                      ) : (
                         <Text variant="caption" tone="secondary">
-                          {trip.driverDetails.rating.toFixed(1)}
+                          New driver
                         </Text>
-                      </View>
-                    )}
+                      ))}
                     {trip.vehicle && (
                       <Text variant="caption" tone="secondary">
                         {trip.vehicle.color} {trip.vehicle.make}{' '}

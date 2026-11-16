@@ -8,7 +8,7 @@ import type {
   Coordinate,
 } from '../services/journey-api';
 import type { RideWatcher } from '../services/realtime';
-import { makeStop } from '../services/mapbox';
+import { makeStop } from '../services/geo';
 import { AppError } from '../services/errors';
 
 export const demoPlaces: [Stop, Stop, Stop, Stop] = [
