@@ -17,7 +17,7 @@ const config: ExpoConfig = {
     softwareKeyboardLayoutMode: 'resize',
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#125C46',
+      backgroundColor: '#FAF9F6',
     },
     // Native libraries must not implicitly request unsupported MVP capabilities.
     blockedPermissions: [
@@ -30,14 +30,14 @@ const config: ExpoConfig = {
       'expo-secure-store',
       { configureAndroidBackup: true, faceIDPermission: false },
     ],
-    ['expo-status-bar', { style: 'light' }],
+    ['expo-status-bar', { style: 'dark' }],
     ['expo-dev-client', { launchMode: 'most-recent' }],
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#125C46',
+        backgroundColor: '#FAF9F6',
         image: './assets/splash.png',
-        imageWidth: 120,
+        imageWidth: 220,
       },
     ],
     '@maplibre/maplibre-react-native',

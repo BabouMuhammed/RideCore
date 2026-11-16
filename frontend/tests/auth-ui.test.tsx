@@ -55,7 +55,7 @@ test('registration submits exact fields and confirms creation without authentica
   const user = interactions();
   await render(testApp(h));
   await user.press(
-    await screen.findByRole('button', { name: 'Create an account' }),
+    await screen.findByRole('button', { name: 'Get started' }),
   );
   for (const [label, value] of [
     ['First name', ' Test '],
@@ -75,7 +75,7 @@ test('registration submits exact fields and confirms creation without authentica
     email: 'rider@example.test',
     phone: rider.phone,
     password: 'test-only-password',
-    role: 'rider',
+    accountType: 'rider',
   });
   expect(h.store.set).not.toHaveBeenCalled();
   expect(h.controller.getSnapshot().stage).toBe('anonymous');
@@ -89,7 +89,7 @@ test('invalid registration stays in the form and never calls the backend', async
   const user = interactions();
   await render(testApp(h));
   await user.press(
-    await screen.findByRole('button', { name: 'Create an account' }),
+    await screen.findByRole('button', { name: 'Get started' }),
   );
   await user.press(screen.getByRole('button', { name: 'Create account' }));
   expect(
@@ -170,7 +170,7 @@ test('restored active ride enters the real requested state without driver lifecy
   const h = harness('credential');
   h.api.rides.mockResolvedValue([activeRide]);
   await render(testApp(h));
-  expect(await screen.findByText('Connecting to a driver')).toBeOnTheScreen();
+  expect(await screen.findByText('Finding your driver')).toBeOnTheScreen();
   expect(h.controller.getSnapshot()).toMatchObject({ activeRide });
 });
 test('an admin account gets a clear role rejection instead of rider tabs', async () => {

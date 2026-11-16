@@ -1,6 +1,6 @@
 import { useState, type ComponentRef, type ReactNode, type Ref } from 'react';
-import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
-import { colors, radius, size, space, type } from '../../theme/tokens';
+import { Platform, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { colors, fonts, radius, size, space, type } from '../../theme/tokens';
 import { Text } from './Text';
 type Props = TextInputProps & {
   label: string;
@@ -25,7 +25,9 @@ export function Input({
   const [focused, setFocused] = useState(false);
   return (
     <View style={styles.wrapper}>
-      <Text variant="label">{label}</Text>
+      <Text variant="caption" style={styles.label}>
+        {label}
+      </Text>
       <View
         style={[
           styles.frame,
@@ -34,7 +36,8 @@ export function Input({
               ? colors.error
               : focused
                 ? colors.brand
-                : colors.neutral,
+                : colors.border,
+            backgroundColor: focused ? colors.brandSoft : colors.neutral,
           },
         ]}
       >
@@ -72,13 +75,15 @@ export function Input({
 }
 const styles = StyleSheet.create({
   wrapper: { gap: space.sm },
+  label: { fontFamily: fonts.medium, color: colors.text },
   frame: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.neutral,
-    borderWidth: 2,
+    borderWidth: 1,
     borderRadius: radius.md,
     paddingHorizontal: space.sm,
+    minHeight: size.input,
   },
   input: {
     ...type.body,
@@ -88,5 +93,7 @@ const styles = StyleSheet.create({
     minHeight: size.input,
     paddingHorizontal: space.sm,
     paddingVertical: space.md,
+    // The frame's orange border shows focus; drop the browser's inner outline.
+    ...(Platform.OS === 'web' ? ({ outlineWidth: 0 } as object) : null),
   },
 });

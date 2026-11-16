@@ -33,7 +33,7 @@ export function RateRider({
               minWidth: size.touch,
               minHeight: size.touch,
               borderRadius: radius.pill,
-              backgroundColor: value <= rating ? colors.taxi : colors.neutral,
+              backgroundColor: value <= rating ? colors.brand : colors.neutral,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -41,7 +41,7 @@ export function RateRider({
             <Icon
               name="star"
               size={30}
-              color={value <= rating ? colors.onTaxi : colors.disabledText}
+              color={value <= rating ? colors.onBrand : colors.disabledText}
             />
           </Pressable>
         ))}

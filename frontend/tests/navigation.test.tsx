@@ -39,14 +39,14 @@ test('sign-in route is a real credential form and back returns to welcome', asyn
   expect(screen.getByLabelText('Password')).toHaveProp('secureTextEntry', true);
   await user.press(screen.getByRole('button', { name: 'Go back' }));
   expect(
-    await screen.findByRole('button', { name: 'Create an account' }),
+    await screen.findByRole('button', { name: 'Get started' }),
   ).toBeOnTheScreen();
 });
 test('registration has its own route and collects only the required fields', async () => {
   const user = userEvent.setup();
   await render(<App />);
   await user.press(
-    await screen.findByRole('button', { name: 'Create an account' }),
+    await screen.findByRole('button', { name: 'Get started' }),
   );
   expect(await screen.findByLabelText('Password')).toBeOnTheScreen();
   expect(screen.getByLabelText('Email')).toBeOnTheScreen();
@@ -74,7 +74,7 @@ test('the authenticated rider shell connects real Home, Activity and Account', a
       }),
     );
     await user.press(await screen.findByRole('button', { name: 'Comfort' }));
-    expect(await screen.findByText('Plan your ride')).toBeOnTheScreen();
+    expect(await screen.findByText('Where to?')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Back to home' }));
     expect(await screen.findByText('Where to?')).toBeOnTheScreen();
   }

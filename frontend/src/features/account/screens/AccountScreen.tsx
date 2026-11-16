@@ -92,16 +92,16 @@ const styles = StyleSheet.create({
   avatar: {
     width: 76,
     height: 76,
-    backgroundColor: colors.taxi,
+    backgroundColor: colors.brand,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
   initials: {
-    fontFamily: fonts.wideBold,
+    fontFamily: fonts.semibold,
     fontSize: 26,
     lineHeight: 32,
-    color: colors.onTaxi,
+    color: colors.onBrand,
   },
   security: {
     flexDirection: 'row',

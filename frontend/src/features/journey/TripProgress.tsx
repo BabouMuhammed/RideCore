@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dotDone: { backgroundColor: colors.brand, borderColor: colors.brand },
-  dotNow: { backgroundColor: colors.taxi, borderColor: colors.brand, borderWidth: 3 },
+  dotNow: { backgroundColor: colors.brandSoft, borderColor: colors.brand, borderWidth: 3 },
   label: { fontSize: 11, lineHeight: 14, textAlign: 'center' },
   labelNow: { fontFamily: fonts.bold, color: colors.text },
 });

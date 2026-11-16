@@ -1,6 +1,6 @@
 import type { Trip } from '../../services/journey-api';
 export const statusLabels: Record<Trip['status'], string> = {
-  requested: 'Connecting to a driver',
+  requested: 'Finding your driver',
   accepted: 'Driver matched',
   driver_arriving: 'Your driver is approaching',
   driver_arrived: 'Your driver has arrived',

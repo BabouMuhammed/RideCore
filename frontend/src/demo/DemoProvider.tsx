@@ -32,7 +32,7 @@ export function DemoProvider({ children }: PropsWithChildren) {
       {runtime && (
         <View
           style={{
-            backgroundColor: colors.taxi,
+            backgroundColor: colors.ink,
             paddingHorizontal: 16,
             paddingVertical: 10,
             paddingTop: insets.top + 10,
@@ -41,7 +41,7 @@ export function DemoProvider({ children }: PropsWithChildren) {
             gap: 12,
           }}
         >
-          <Text variant="caption" style={{ flex: 1 }}>
+          <Text variant="caption" tone="inverse" style={{ flex: 1 }}>
             Demo mode · Sample rides, no charges
           </Text>
           <Pressable
@@ -50,7 +50,9 @@ export function DemoProvider({ children }: PropsWithChildren) {
             onPress={() => setRuntime(null)}
             style={{ padding: 8 }}
           >
-            <Text variant="label">Exit demo</Text>
+            <Text variant="label" style={{ color: colors.brand }}>
+              Exit demo
+            </Text>
           </Pressable>
         </View>
       )}

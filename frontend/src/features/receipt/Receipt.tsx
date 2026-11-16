@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Pressable } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { colors, fonts, size, radius, space } from '../../theme/tokens';
-import { TaxiBand } from '../../components/brand/TaxiBand';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
@@ -110,30 +109,31 @@ export function Receipt({
   }
   return (
     <>
-      <Text variant="heading">Trip receipt</Text>
-      <View
-        style={{
-          backgroundColor: colors.brand,
-          borderRadius: radius.lg,
-          overflow: 'hidden',
-        }}
-      >
-        <View style={{ padding: space.xl, gap: space.xs }}>
-          <Text tone="inverse">Your total</Text>
+      <Text variant="title" accessibilityRole="header">
+        Trip receipt
+      </Text>
+      <View style={styles.total}>
+        <View style={{ flex: 1, gap: space.xs }}>
+          <Text tone="inverse" variant="caption">
+            Your total
+          </Text>
           <Text
             numberOfLines={1}
             adjustsFontSizeToFit
             style={{
-              fontFamily: fonts.wideBlack,
-              fontSize: 34,
-              lineHeight: 42,
-              color: colors.onBrand,
+              fontFamily: fonts.medium,
+              fontSize: 32,
+              lineHeight: 38,
+              letterSpacing: -1,
+              color: colors.onInk,
             }}
           >
             {money(trip.finalFare ?? trip.estimatedFare, trip.currency)}
           </Text>
         </View>
-        <TaxiBand thin />
+        <View style={styles.totalIcon}>
+          <Icon name="banknote" size={20} color={colors.onBrand} />
+        </View>
       </View>
       {!loaded && (
         <Button
@@ -259,7 +259,7 @@ export function Receipt({
                   minHeight: size.touch,
                   borderRadius: radius.pill,
                   backgroundColor:
-                    value <= rating ? colors.taxi : colors.neutral,
+                    value <= rating ? colors.brand : colors.neutral,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
@@ -267,7 +267,7 @@ export function Receipt({
                 <Icon
                   name="star"
                   size={30}
-                  color={value <= rating ? colors.onTaxi : colors.disabledText}
+                  color={value <= rating ? colors.onBrand : colors.disabledText}
                 />
               </Pressable>
             ))}
@@ -296,3 +296,23 @@ export function Receipt({
     </>
   );
 }
+const styles = StyleSheet.create({
+  total: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    backgroundColor: colors.ink,
+    borderRadius: radius.md,
+    paddingVertical: space.lg,
+    paddingLeft: 20,
+    paddingRight: space.md,
+  },
+  totalIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

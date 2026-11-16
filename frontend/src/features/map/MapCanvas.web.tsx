@@ -64,8 +64,8 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
       const label = document.createElement('span');
       label.textContent = pin.label;
       Object.assign(label.style, {
-        backgroundColor: pin.id === 'driver' ? colors.taxi : colors.brand,
-        color: pin.id === 'driver' ? colors.onTaxi : colors.onBrand,
+        backgroundColor: pin.id === 'driver' ? colors.brand : colors.brand,
+        color: pin.id === 'driver' ? colors.onBrand : colors.onBrand,
         padding: '6px 9px',
         borderRadius: '12px',
         border: '2px solid white',

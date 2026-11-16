@@ -162,7 +162,7 @@ export function DriveScreen() {
             {next && (
               <Button
                 label={next.label}
-                variant="taxi"
+               
                 loading={state.busy}
                 onPress={() => void controller.advance()}
               />
@@ -279,7 +279,7 @@ export function DriveScreen() {
             )}
             <Button
               label="Go online"
-              variant="taxi"
+             
               loading={state.busy}
               disabled={!location}
               onPress={() => void controller.goOnline()}
@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontFamily: fonts.wideBold, fontSize: 22, lineHeight: 28, color: colors.brand },
+  avatarText: { fontFamily: fonts.semibold, fontSize: 20, lineHeight: 26, color: colors.text },
   fare: { fontFamily: fonts.bold, fontSize: 17, lineHeight: 22, color: colors.text },
   directions: {
     flexDirection: 'row',
@@ -337,16 +337,17 @@ const styles = StyleSheet.create({
     minHeight: 64,
   },
   collect: {
-    backgroundColor: colors.brand,
-    borderRadius: radius.lg,
+    backgroundColor: colors.ink,
+    borderRadius: radius.md,
     padding: space.xl,
     gap: space.xs,
   },
   collectAmount: {
-    fontFamily: fonts.wideBlack,
+    fontFamily: fonts.medium,
     fontSize: 32,
-    lineHeight: 40,
-    color: colors.onBrand,
+    lineHeight: 38,
+    letterSpacing: -1,
+    color: colors.onInk,
   },
   hint: {
     flexDirection: 'row',

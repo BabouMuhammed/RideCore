@@ -11,7 +11,7 @@ import { PhoneInput, PasswordInput } from '../components/AuthFields';
 import { useSession } from '../../session/SessionProvider';
 import { FormError, registrationPayload } from '../validation';
 import { safeError } from '../../../services/errors';
-import { colors, radius, space } from '../../../theme/tokens';
+import { colors, radius, space, fonts } from '../../../theme/tokens';
 export function RegisterScreen({
   navigation,
 }: NativeStackScreenProps<AuthStackParams, 'Register'>) {
@@ -43,7 +43,7 @@ export function RegisterScreen({
     if (submitting.current) return;
     setFailure(undefined);
     try {
-      const payload = registrationPayload({ ...fields, role });
+      const payload = registrationPayload({ ...fields, accountType: role });
       submitting.current = true;
       setBusy(true);
       await session.api.register(payload);
@@ -85,8 +85,8 @@ export function RegisterScreen({
     <Screen
       header={
         <BrandHeader
-          title="Create an account"
-          subtitle="Your next journey starts with RideCore."
+          title="Create your *account*"
+          subtitle="Ride around town, or sign up to drive and earn."
           onBack={() => navigation.goBack()}
           backDisabled={busy}
         />
@@ -114,7 +114,7 @@ export function RegisterScreen({
               onPress={() => setRole(value)}
               style={[styles.role, checked && styles.roleOn]}
             >
-              <Text variant="heading" style={checked && { color: colors.brand }}>
+              <Text variant="label" style={{ fontFamily: fonts.semibold }}>
                 {label}
               </Text>
               <Text variant="caption" tone="secondary">

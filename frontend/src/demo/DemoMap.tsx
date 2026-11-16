@@ -90,7 +90,7 @@ export function DemoMap({ pins, route, onSelect }: MapCanvasProps) {
                 .map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`)
                 .join(' ')}
               fill="none"
-              stroke="#111"
+              stroke={colors.brand}
               strokeWidth="5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -104,7 +104,9 @@ export function DemoMap({ pins, route, onSelect }: MapCanvasProps) {
                 cx={x}
                 cy={y}
                 r={pin.id === 'driver' ? 10 : 7}
-                fill={pin.id === 'driver' ? colors.brand : colors.text}
+                fill={
+                  pin.id === 'pickup' ? colors.text : colors.brand
+                }
                 stroke="#FFF"
                 strokeWidth="3"
               />

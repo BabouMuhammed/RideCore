@@ -11,7 +11,7 @@ import { PhoneInput, PasswordInput } from '../components/AuthFields';
 import { useSession } from '../../session/SessionProvider';
 import { FormError, loginPayload } from '../validation';
 import { safeError } from '../../../services/errors';
-import { colors, radius, size, space } from '../../../theme/tokens';
+import { colors, radius, size, space, fonts } from '../../../theme/tokens';
 export function SignInScreen({
   navigation,
   route,
@@ -47,8 +47,8 @@ export function SignInScreen({
     <Screen
       header={
         <BrandHeader
-          title="Sign in"
-          subtitle="Welcome back to RideCore."
+          title="Welcome *back*"
+          subtitle="Sign in with your email or phone number and password."
           onBack={() => navigation.goBack()}
           backDisabled={busy}
         />
@@ -82,7 +82,7 @@ export function SignInScreen({
           >
             <Text
               variant="label"
-              style={mode === option && { color: colors.brand }}
+              style={mode === option && { fontFamily: fonts.semibold }}
             >
               {option === 'email' ? 'Email' : 'Phone'}
             </Text>

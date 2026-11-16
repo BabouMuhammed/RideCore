@@ -14,18 +14,18 @@ export function PlateBadge({ plate }: { plate: string }) {
 const styles = StyleSheet.create({
   plate: {
     alignSelf: 'flex-start',
-    backgroundColor: colors.taxi,
-    borderWidth: 2,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
     borderColor: colors.text,
     borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
   text: {
-    fontFamily: fonts.wideBlack,
-    fontSize: 20,
-    lineHeight: 26,
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    lineHeight: 20,
     letterSpacing: 1,
-    color: colors.onTaxi,
+    color: colors.text,
   },
 });

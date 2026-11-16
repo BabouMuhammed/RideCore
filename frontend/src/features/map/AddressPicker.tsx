@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Linking, Platform } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useDemo } from '../../demo/DemoProvider';
 import { demoPlaces } from '../../demo/runtime';
@@ -8,6 +8,8 @@ import { Text } from '../../components/ui/Text';
 import { Button } from '../../components/ui/Button';
 import { ListRow } from '../../components/ui/ListRow';
 import { Icon } from '../../components/ui/Icon';
+import { SectionLabel } from '../../components/ui/SectionLabel';
+import { colors, space } from '../../theme/tokens';
 import { createMapService, makeStop } from '../../services/geo';
 import type { Coordinate, Stop } from '../../services/journey-api';
 import { safeError } from '../../services/errors';
@@ -17,13 +19,17 @@ export function AddressPicker({
   onPin,
   onConfirm,
   onClose,
+  recent = [],
 }: {
   kind: 'pickup' | 'destination';
   pin: Coordinate | null;
   onPin(point: Coordinate): void;
   onConfirm(stop: Stop): void;
   onClose(): void;
+  /** Places from the rider's history, offered as one-tap choices. */
+  recent?: Stop[];
 }) {
+  const [onMap, setOnMap] = useState(false);
   const { runtime } = useDemo();
   const [query, setQuery] = useState('');
   const [draft, setDraft] = useState({ key: '', value: '' });
@@ -121,84 +127,34 @@ export function AddressPicker({
       if (!abort.signal.aborted) setBusy(false);
     }
   }
+  const pinned = pin !== null;
   return (
     <>
-      <Text variant="heading">
-        {kind === 'pickup' ? 'Choose your pickup' : 'Where are you going?'}
+      <Text variant="title" accessibilityRole="header">
+        {pinned
+          ? kind === 'pickup'
+            ? 'Set pickup location'
+            : 'Set destination'
+          : kind === 'pickup'
+            ? 'Where from?'
+            : 'Where to?'}
       </Text>
-      <Input
-        label="Search address or landmark"
-        placeholder={kind === 'pickup' ? 'Enter pickup location' : 'Where to?'}
-        prefix={<Icon name="search" size={20} />}
-        value={query}
-        onChangeText={setQuery}
-        returnKeyType="search"
-        onSubmitEditing={() => void search()}
-        maxLength={120}
-      />
-      <Button
-        label="Search places"
-        loading={busy}
-        disabled={query.trim().length < 3}
-        onPress={() => void search()}
-      />
-      <Button
-        label={runtime ? 'Use demo pickup location' : 'Use my current location'}
-        variant="secondary"
-        disabled={busy}
-        onPress={() => void locate()}
-      />
-      {runtime &&
-        !searched &&
-        demoPlaces.map((stop) => (
-          <ListRow
-            key={stop.address}
-            icon="pin"
-            title={stop.address}
-            subtitle="Demo place"
-            onPress={() => onConfirm(stop)}
-          />
-        ))}
-      {denied && (
-        <>
-          <Text>
-            Location permission is off. You can still search or choose a map
-            pin.
-            {Platform.OS === 'web'
-              ? ' To enable location, update this site’s browser permissions.'
-              : ' Enable location in your device settings to use GPS.'}
-          </Text>
-          {Platform.OS !== 'web' && (
-            <Button
-              label="Open location settings"
-              variant="secondary"
-              onPress={() => void Linking.openSettings()}
-            />
-          )}
-        </>
-      )}
-      {searched && !results.length && (
-        <Text>No places found. Try a nearby landmark or choose a map pin.</Text>
-      )}
-      {results.map((stop, index) => (
-        <ListRow
-          key={index}
-          icon="pin"
-          title={stop.address}
-          onPress={() => onConfirm(stop)}
-        />
-      ))}
-      <Text tone="secondary">
-        Tap the street map to place a pin, then confirm its address or landmark.
-      </Text>
-      {pin && (
+      {pinned ? (
         <>
           <Input
             label="Address or landmark for this pin"
             value={address}
+            placeholder={lookupBusy ? 'Looking up this place…' : 'e.g. Westfield Junction'}
+            prefix={<Icon name="pin" size={20} color={colors.brand} />}
             onChangeText={(value) => setDraft({ key: pinKey, value })}
             maxLength={120}
           />
+          <View style={styles.hint}>
+            <Icon name="move" size={16} color={colors.secondary} />
+            <Text variant="caption" tone="secondary">
+              Tap the map to move the pin.
+            </Text>
+          </View>
           <Button
             label={kind === 'pickup' ? 'Confirm pickup' : 'Confirm destination'}
             disabled={!address.trim() || busy || lookupBusy}
@@ -211,6 +167,119 @@ export function AddressPicker({
             }}
           />
         </>
+      ) : (
+        <>
+          <Input
+            label={kind === 'pickup' ? 'Pickup' : 'Destination'}
+            placeholder={kind === 'pickup' ? 'Search pickup point' : 'Search a place or landmark'}
+            prefix={<Icon name={kind === 'pickup' ? 'pin' : 'search'} size={20} color={colors.brand} />}
+            value={query}
+            onChangeText={setQuery}
+            returnKeyType="search"
+            onSubmitEditing={() => void search()}
+            maxLength={120}
+          />
+          {query.trim().length >= 3 && (
+            <Button
+              label="Search places"
+              variant="secondary"
+              loading={busy}
+              onPress={() => void search()}
+            />
+          )}
+          {searched && !results.length && (
+            <Text tone="secondary">
+              No places found. Try a nearby landmark or choose on the map.
+            </Text>
+          )}
+          {results.map((stop, index) => (
+            <ListRow key={index} icon="pin" title={stop.address} onPress={() => onConfirm(stop)} />
+          ))}
+          <View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={runtime ? 'Use demo pickup location' : 'Use my current location'}
+              disabled={busy}
+              onPress={() => void locate()}
+              style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]}
+            >
+              <Icon name="locate" size={20} />
+              <Text variant="label" style={{ flex: 1 }}>
+                {runtime ? 'Use demo pickup location' : 'Use my current location'}
+              </Text>
+              <Icon name="arrowRight" size={18} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Choose on map"
+              onPress={() => setOnMap(true)}
+              style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]}
+            >
+              <Icon name="map" size={20} color={colors.brand} />
+              <Text variant="label" style={{ flex: 1 }}>
+                Choose on map
+              </Text>
+              <Icon name="arrowRight" size={18} />
+            </Pressable>
+          </View>
+          {onMap && (
+            <View style={styles.hint}>
+              <Icon name="move" size={16} color={colors.secondary} />
+              <Text variant="caption" tone="secondary">
+                Tap the map where you want the pin.
+              </Text>
+            </View>
+          )}
+          {runtime && !searched && (
+            <>
+              <SectionLabel>Demo places</SectionLabel>
+              {demoPlaces.map((stop) => (
+                <ListRow
+                  key={stop.address}
+                  icon="pin"
+                  title={stop.address}
+                  subtitle="Demo place"
+                  onPress={() => onConfirm(stop)}
+                />
+              ))}
+            </>
+          )}
+          {!runtime && !searched && recent.length > 0 && (
+            <>
+              <SectionLabel>Recent places</SectionLabel>
+              {recent.map((stop) => {
+                const [name, ...rest] = stop.address.split(',');
+                return (
+                  <ListRow
+                    key={stop.address}
+                    icon="pin"
+                    title={name!.trim()}
+                    subtitle={rest.join(',').trim() || undefined}
+                    onPress={() => onConfirm(stop)}
+                  />
+                );
+              })}
+            </>
+          )}
+          {denied && (
+            <>
+              <Text>
+                Location permission is off. You can still search or choose on
+                the map.
+                {Platform.OS === 'web'
+                  ? ' To enable location, update this site’s browser permissions.'
+                  : ' Enable location in your device settings to use GPS.'}
+              </Text>
+              {Platform.OS !== 'web' && (
+                <Button
+                  label="Open location settings"
+                  variant="secondary"
+                  onPress={() => void Linking.openSettings()}
+                />
+              )}
+            </>
+          )}
+        </>
       )}
       {(error || lookupError) && (
         <Text tone="error" accessibilityLiveRegion="polite">
@@ -221,3 +290,8 @@ export function AddressPicker({
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  hint: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  action: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48 },
+});

@@ -23,25 +23,25 @@ test('demo completes a ride offline, records a sample payment and exits without 
     jest.mocked(SecureStore.setItemAsync).mockClear();
     jest.mocked(SecureStore.deleteItemAsync).mockClear();
     await fireEvent.press(screen.getByRole('button', { name: 'Where to?' }));
-    await fireEvent.press(screen.getByRole('button', { name: /^Pickup,/ }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Pickup:/ }));
     await fireEvent.press(
       screen.getByRole('button', {
         name: 'Senegambia Beach, Kololi, Demo place',
       }),
     );
     await fireEvent.press(
-      screen.getByRole('button', { name: /^Destination,/ }),
+      screen.getByRole('button', { name: /^Destination:/ }),
     );
     await fireEvent.press(
       screen.getByRole('button', {
         name: 'Banjul International Airport, Demo place',
       }),
     );
-    await fireEvent.press(screen.getByRole('button', { name: 'See fares' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Choose a ride' }));
     await fireEvent.press(
-      await screen.findByRole('button', { name: 'Continue with this ride' }),
+      await screen.findByRole('button', { name: 'Continue' }),
     );
-    await fireEvent.press(screen.getByRole('button', { name: 'Request ride' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Confirm ride' }));
     for (const label of [
       'Demo: match a driver',
       'Demo: advance ride',

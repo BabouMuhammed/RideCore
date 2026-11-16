@@ -4,7 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RiderStackParams } from '../../../navigation/types';
 import { Screen } from '../../../components/layout/Screen';
 import { Text } from '../../../components/ui/Text';
-import { Input } from '../../../components/ui/Input';
+import { OtpInput } from '../../../components/ui/OtpInput';
 import { Button } from '../../../components/ui/Button';
 import { BrandHeader } from '../../../components/layout/BrandHeader';
 import { useSession } from '../../session/SessionProvider';
@@ -105,7 +105,7 @@ export function PhoneVerificationScreen({
     <Screen
       header={
         <BrandHeader
-          title={verified ? 'Phone verified' : 'Verify your phone'}
+          title={verified ? 'Phone *verified*' : 'Verify your *phone*'}
           onBack={() => navigation.goBack()}
           backDisabled={busy}
         />
@@ -116,13 +116,15 @@ export function PhoneVerificationScreen({
       ) : (
         <>
           <Text tone="secondary">
+            Enter the verification code sent to{' '}
             {state.stage === 'ready'
               ? maskGambianPhone(state.user.phone)
-              : 'Your registered phone number'}
+              : 'your phone'}
+            .
           </Text>
-          <Text>
-            Phone verification currently uses simulated delivery. No SMS is
-            sent. Verification is optional.
+          <Text variant="caption" tone="secondary">
+            Delivery is simulated for this project: no SMS is sent, and
+            verification is optional.
           </Text>
           {challenge && (
             <>
@@ -150,16 +152,11 @@ export function PhoneVerificationScreen({
                     Math.max(0, Math.ceil((challenge.expiresAt - now) / 1000)) +
                     ' seconds.'}
               </Text>
-              <Input
-                label="Verification code"
+              <OtpInput
                 value={code}
-                onChangeText={setCode}
-                keyboardType="number-pad"
-                autoComplete="off"
+                onChange={setCode}
                 editable={!busy && !expired}
-                maxLength={6}
-                returnKeyType="done"
-                onSubmitEditing={() => void verify()}
+                onSubmit={() => void verify()}
               />
               <Button
                 label="Verify phone"
@@ -174,6 +171,7 @@ export function PhoneVerificationScreen({
             </Text>
           )}
           <Button
+            variant={challenge ? 'secondary' : 'primary'}
             label={
               challenge ? 'Request another code' : 'Request verification code'
             }

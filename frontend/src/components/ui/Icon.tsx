@@ -16,12 +16,42 @@ import Mail from 'lucide-react-native/icons/mail';
 import Star from 'lucide-react-native/icons/star';
 import Share2 from 'lucide-react-native/icons/share-2';
 import Check from 'lucide-react-native/icons/check';
+import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
+import ArrowRight from 'lucide-react-native/icons/arrow-right';
+import Menu from 'lucide-react-native/icons/menu';
+import ChevronDown from 'lucide-react-native/icons/chevron-down';
+import MapIcon from 'lucide-react-native/icons/map';
+import Pencil from 'lucide-react-native/icons/pencil';
+import Banknote from 'lucide-react-native/icons/banknote';
+import Move from 'lucide-react-native/icons/move';
+import LocateFixed from 'lucide-react-native/icons/locate-fixed';
+import Briefcase from 'lucide-react-native/icons/briefcase-business';
+import Phone from 'lucide-react-native/icons/phone';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import Navigation from 'lucide-react-native/icons/navigation';
+import Power from 'lucide-react-native/icons/power';
+import Wallet from 'lucide-react-native/icons/wallet';
 import type { LucideIcon } from 'lucide-react-native';
 import { Platform } from 'react-native';
 import { colors, size as sizes } from '../../theme/tokens';
 const icons = {
   share: Share2,
   check: Check,
+  arrowUpRight: ArrowUpRight,
+  arrowRight: ArrowRight,
+  menu: Menu,
+  chevronDown: ChevronDown,
+  map: MapIcon,
+  pencil: Pencil,
+  banknote: Banknote,
+  move: Move,
+  locate: LocateFixed,
+  briefcase: Briefcase,
+  phone: Phone,
+  message: MessageCircle,
+  navigation: Navigation,
+  power: Power,
+  wallet: Wallet,
   car: Car,
   search: Search,
   services: Grid2x2,

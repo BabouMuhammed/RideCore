@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
-import { colors, size, space } from '../../theme/tokens';
+import { colors, radius, size, space } from '../../theme/tokens';
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 export function ListRow({
@@ -30,7 +30,7 @@ export function ListRow({
           </Text>
         )}
       </View>
-      {onPress && <Icon name="chevron" />}
+      {onPress && <Icon name="chevron" size={16} color={colors.secondary} />}
     </>
   );
   if (!onPress) return <View style={styles.row}>{content}</View>;
@@ -54,18 +54,18 @@ export function ListRow({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: space.lg,
+    gap: 14,
     alignItems: 'center',
-    minHeight: size.touch,
-    paddingVertical: space.lg,
+    minHeight: 72,
+    paddingVertical: space.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
   copy: { flex: 1, gap: space.xs },
   icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: size.tile,
+    height: size.tile,
+    borderRadius: radius.tile,
     backgroundColor: colors.neutral,
     alignItems: 'center',
     justifyContent: 'center',

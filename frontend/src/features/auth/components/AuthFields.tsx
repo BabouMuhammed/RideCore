@@ -22,7 +22,7 @@ export function PhoneInput(props: Omit<Props, 'label'>) {
           accessible
           accessibilityLabel="The Gambia, country code plus 220"
         >
-          <Text variant="label">GM +220</Text>
+          <Text variant="label">+220</Text>
         </View>
       }
     />
@@ -40,6 +40,7 @@ export function PasswordInput(props: Omit<Props, 'label'>) {
       spellCheck={false}
       trailing={
         <IconButton
+          tone="plain"
           icon={visible ? 'eyeOff' : 'eye'}
           label={visible ? 'Hide password' : 'Show password'}
           onPress={() => setVisible(!visible)}
@@ -50,8 +51,9 @@ export function PasswordInput(props: Omit<Props, 'label'>) {
 }
 const styles = StyleSheet.create({
   prefix: {
-    paddingHorizontal: space.sm,
-    paddingVertical: space.xs,
+    paddingLeft: space.sm,
+    paddingRight: space.lg,
+    marginVertical: space.lg,
     borderRightWidth: 1,
     borderRightColor: colors.border,
   },

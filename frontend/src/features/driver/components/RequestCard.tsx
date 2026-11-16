@@ -64,7 +64,7 @@ export function RequestCard({
       </Text>
       <Button
         label="Accept ride"
-        variant="taxi"
+       
         disabled={busy}
         onPress={onAccept}
         accessibilityLabel={`Accept ride from ${request.pickup.address}`}

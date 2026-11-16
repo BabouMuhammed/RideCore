@@ -45,15 +45,15 @@ export function TripRow({ trip, onPress }: { trip: Trip; onPress(): void }) {
           <View
             style={[
               styles.badge,
-              state.tone === 'done' && { backgroundColor: colors.brandSoft },
+              state.tone === 'done' && { backgroundColor: colors.successSoft },
               state.tone === 'cancelled' && { backgroundColor: colors.errorSoft },
-              state.tone === 'live' && { backgroundColor: colors.taxi },
+              state.tone === 'live' && { backgroundColor: colors.brand },
             ]}
           >
             <Text
               style={[
                 styles.badgeText,
-                state.tone === 'done' && { color: colors.brand },
+                state.tone === 'done' && { color: colors.success },
                 state.tone === 'cancelled' && { color: colors.error },
               ]}
             >
@@ -93,6 +93,6 @@ const styles = StyleSheet.create({
   copy: { flex: 1, gap: 6 },
   meta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.sm },
   badge: { borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 2 },
-  badgeText: { fontFamily: fonts.semibold, fontSize: 13, lineHeight: 18, color: colors.onTaxi },
+  badgeText: { fontFamily: fonts.semibold, fontSize: 13, lineHeight: 18, color: colors.onBrand },
   fare: { fontFamily: fonts.bold, fontSize: 16, lineHeight: 22, color: colors.text },
 });

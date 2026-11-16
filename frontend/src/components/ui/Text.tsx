@@ -3,7 +3,7 @@ import { colors, type } from '../../theme/tokens';
 
 type Props = TextProps & {
   variant?: keyof typeof type;
-  tone?: 'primary' | 'secondary' | 'error' | 'inverse';
+  tone?: 'primary' | 'secondary' | 'muted' | 'error' | 'inverse';
 };
 export function Text({
   variant = 'body',
@@ -22,6 +22,7 @@ const tones = {
   primary: colors.text,
   secondary: colors.secondary,
   error: colors.error,
-  inverse: colors.onBrand,
+  muted: colors.muted,
+  inverse: colors.inverse,
 };
 const styles = StyleSheet.create({ base: { flexShrink: 1 } });

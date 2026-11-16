@@ -15,12 +15,12 @@ import {
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 const appFonts = {
-  'Archivo-Regular': require('./assets/fonts/Archivo-Regular.ttf'),
-  'Archivo-Medium': require('./assets/fonts/Archivo-Medium.ttf'),
-  'Archivo-SemiBold': require('./assets/fonts/Archivo-SemiBold.ttf'),
-  'Archivo-Bold': require('./assets/fonts/Archivo-Bold.ttf'),
-  'ArchivoExpanded-ExtraBold': require('./assets/fonts/ArchivoExpanded-ExtraBold.ttf'),
-  'ArchivoExpanded-Black': require('./assets/fonts/ArchivoExpanded-Black.ttf'),
+  'Inter-Regular': require('./assets/fonts/Inter_400Regular.ttf'),
+  'Inter-Medium': require('./assets/fonts/Inter_500Medium.ttf'),
+  'Inter-SemiBold': require('./assets/fonts/Inter_600SemiBold.ttf'),
+  'Inter-Bold': require('./assets/fonts/Inter_700Bold.ttf'),
+  'Inter-MediumItalic': require('./assets/fonts/Inter_500Medium_Italic.ttf'),
+  'Inter-BoldItalic': require('./assets/fonts/Inter_700Bold_Italic.ttf'),
 };
 
 export default function App() {

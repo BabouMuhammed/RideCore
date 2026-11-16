@@ -16,8 +16,8 @@ const categoryLabels: Record<Category, string> = {
   xl: 'XL',
 };
 const statusCopy: Record<Verification | 'missing', { label: string; tone: string; bg: string }> = {
-  missing: { label: 'To do', tone: colors.onTaxi, bg: colors.taxi },
-  pending: { label: 'Waiting for approval', tone: colors.onTaxi, bg: colors.neutral },
+  missing: { label: 'To do', tone: colors.onBrand, bg: colors.brand },
+  pending: { label: 'Waiting for approval', tone: colors.onBrand, bg: colors.neutral },
   approved: { label: 'Approved', tone: colors.brand, bg: colors.brandSoft },
   rejected: { label: 'Not approved', tone: colors.error, bg: colors.errorSoft },
 };
@@ -82,7 +82,7 @@ export function DriverOnboarding() {
       edges={['top', 'left', 'right']}
       header={
         <BrandHeader
-          title="Start driving"
+          title="Start *driving*"
           subtitle="Add your licence and vehicle. An admin checks them before you can take rides."
         />
       }
@@ -183,7 +183,7 @@ export function DriverOnboarding() {
                 onPress={() => setCar({ ...car, vehicleType: category })}
                 style={[styles.type, checked && styles.typeOn]}
               >
-                <Text variant="label" style={checked && { color: colors.brand }}>
+                <Text variant="label" style={checked && { fontFamily: fonts.semibold }}>
                   {categoryLabels[category]}
                 </Text>
               </Pressable>

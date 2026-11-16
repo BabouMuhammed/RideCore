@@ -31,7 +31,7 @@ afterEach(() => jest.useRealTimers());
 test('mock OTP request is honest, masked and enforces resend guard', async () => {
   const h = await setupOtp();
   const user = userEvent.setup();
-  expect(screen.getByText(/No SMS is sent/)).toBeOnTheScreen();
+  expect(screen.getByText(/no SMS is sent/i)).toBeOnTheScreen();
   expect(screen.queryByText(rider.phone)).not.toBeOnTheScreen();
   await user.press(
     screen.getByRole('button', { name: 'Request verification code' }),

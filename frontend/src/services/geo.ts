@@ -15,6 +15,14 @@ export const geoConfig = {
     process.env.EXPO_PUBLIC_ROUTER_URL || 'https://router.project-osrm.org',
 };
 
+export type RouteInfo = {
+  points: Coordinate[];
+  /** Metres along the road, from the router. */
+  distance: number | null;
+  /** Seconds of driving, from the router. */
+  duration: number | null;
+};
+
 export const initialCenter: Coordinate = [-16.579, 13.454]; // Region, never claimed as rider GPS.
 
 export function makeStop(address: string, coordinates: Coordinate): Stop {
@@ -111,6 +119,34 @@ export function createMapService(
     if (!label) throw new AppError('contract');
     return makeStop(label, coordinate([lng, lat]));
   }
+  async function routeInfo(
+    from: Coordinate,
+    to: Coordinate,
+    signal?: AbortSignal,
+  ): Promise<RouteInfo> {
+    coordinate(from);
+    coordinate(to);
+    const data = record(
+      await request(
+        `${base(config.router)}/route/v1/driving/${from.join(',')};${to.join(',')}?overview=full&geometries=geojson`,
+        signal,
+      ),
+    );
+    if (data.code !== 'Ok' || !Array.isArray(data.routes) || !data.routes[0])
+      throw new AppError('unavailable');
+    const best = record(data.routes[0]);
+    const geometry = record(best.geometry);
+    if (!Array.isArray(geometry.coordinates)) throw new AppError('contract');
+    const finite = (value: unknown) =>
+      typeof value === 'number' && Number.isFinite(value) && value >= 0
+        ? value
+        : null;
+    return {
+      points: geometry.coordinates.map(coordinate),
+      distance: finite(best.distance),
+      duration: finite(best.duration),
+    };
+  }
   return {
     search: async (query: string, signal?: AbortSignal) => {
       if (query.trim().length < 3) return [];
@@ -145,24 +181,9 @@ export function createMapService(
       if (!data || typeof data !== 'object' || 'error' in data) return null;
       return toStop(data);
     },
-    route: async (
-      from: Coordinate,
-      to: Coordinate,
-      signal?: AbortSignal,
-    ): Promise<Coordinate[]> => {
-      coordinate(from);
-      coordinate(to);
-      const data = record(
-        await request(
-          `${base(config.router)}/route/v1/driving/${from.join(',')};${to.join(',')}?overview=full&geometries=geojson`,
-          signal,
-        ),
-      );
-      if (data.code !== 'Ok' || !Array.isArray(data.routes) || !data.routes[0])
-        throw new AppError('unavailable');
-      const geometry = record(record(data.routes[0]).geometry);
-      if (!Array.isArray(geometry.coordinates)) throw new AppError('contract');
-      return geometry.coordinates.map(coordinate);
-    },
+    route: async (from: Coordinate, to: Coordinate, signal?: AbortSignal) =>
+      (await routeInfo(from, to, signal)).points,
+    /** Road geometry plus the router's own distance (m) and duration (s). */
+    routeInfo,
   };
 }

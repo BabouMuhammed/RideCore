@@ -79,15 +79,16 @@ export function DriverTripsScreen() {
 
 const styles = StyleSheet.create({
   today: {
-    backgroundColor: colors.brand,
-    borderRadius: radius.lg,
+    backgroundColor: colors.ink,
+    borderRadius: radius.md,
     padding: space.xl,
     gap: space.xs,
   },
   amount: {
-    fontFamily: fonts.wideBlack,
+    fontFamily: fonts.medium,
     fontSize: 32,
-    lineHeight: 40,
-    color: colors.onBrand,
+    lineHeight: 38,
+    letterSpacing: -1,
+    color: colors.onInk,
   },
 });

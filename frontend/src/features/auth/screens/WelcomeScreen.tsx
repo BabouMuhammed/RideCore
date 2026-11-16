@@ -1,14 +1,40 @@
 import { useSession } from '../../session/SessionProvider';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParams } from '../../../navigation/types';
-import { VehicleArt } from '../../../components/brand/VehicleArt';
+import { Wordmark } from '../../../components/brand/Wordmark';
+import { Headline } from '../../../components/ui/Headline';
 import { Text } from '../../../components/ui/Text';
 import { Button } from '../../../components/ui/Button';
 import { colors, fonts, size, space } from '../../../theme/tokens';
 import { useDemo } from '../../../demo/DemoProvider';
 import { apiUrl, serverSettingAllowed } from '../../../services/server-config';
+
+const car = require('../../../../assets/images/onboarding-car.jpg');
+
+// Soft fade so the photo melts into the page, as in the Figma onboarding.
+function Fade({ edge }: { edge: 'top' | 'bottom' }) {
+  const id = `fade-${edge}`;
+  return (
+    <Svg
+      style={[styles.fade, edge === 'top' ? { top: 0 } : { bottom: 0 }]}
+      width="100%"
+      height="100%"
+      preserveAspectRatio="none"
+      pointerEvents="none"
+    >
+      <Defs>
+        <LinearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={colors.canvas} stopOpacity={edge === 'top' ? 1 : 0} />
+          <Stop offset="1" stopColor={colors.canvas} stopOpacity={edge === 'top' ? 0 : 1} />
+        </LinearGradient>
+      </Defs>
+      <Rect width="100%" height="100%" fill={`url(#${id})`} />
+    </Svg>
+  );
+}
 
 export function WelcomeScreen({
   navigation,
@@ -16,126 +42,123 @@ export function WelcomeScreen({
   const { state } = useSession();
   const demo = useDemo();
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-      <ScrollView
-        style={styles.flex}
-        contentContainerStyle={styles.scroll}
-        bounces={false}
-      >
-        <View style={styles.hero}>
-          <View style={styles.heroInner}>
-            <Text style={styles.wordmark}>RideCore</Text>
-            <Text variant="display" accessibilityRole="header">
-              Your town trip, a tap away.
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
+      <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} bounces={false}>
+        <View style={styles.copy}>
+          <Wordmark />
+          <View style={styles.message}>
+            <Headline text={'Request *Your*\nRide in *Seconds*'} />
+            <Text tone="secondary" style={styles.lede}>
+              Fast pickups, simple booking, and a smoother way to move around.
             </Text>
-            <Text style={styles.lede}>
-              Banjul to Brikama. Fares in dalasi, agreed before you ride.
-            </Text>
-            <View style={styles.car}>
-              <VehicleArt width={240} />
-            </View>
           </View>
         </View>
-        {/* The green band of a Gambian town-trip taxi. Decorative only. */}
-        <View
-          style={styles.band}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        />
-        <View style={styles.bandTrim} />
-        <SafeAreaView edges={['bottom']} style={styles.actions}>
+        <View style={styles.hero}>
+          <Image
+            source={car}
+            style={styles.photo}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+          />
+          <View style={styles.fadeTop}>
+            <Fade edge="top" />
+          </View>
+          <View style={styles.fadeBottom}>
+            <Fade edge="bottom" />
+          </View>
+        </View>
+        <View style={styles.actions}>
           {state.stage === 'anonymous' && state.expired && (
             <Text accessibilityLiveRegion="polite">
               Your sign-in is no longer valid. Please sign in again.
             </Text>
           )}
-          <Button label="Sign in" onPress={() => navigation.navigate('SignIn')} />
           <Button
-            label="Create an account"
-            variant="secondary"
+            label="Get started"
             onPress={() => navigation.navigate('Register')}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Try demo"
-            onPress={demo.enter}
-            hitSlop={8}
-            style={({ pressed }) => [styles.demo, pressed && { opacity: 0.6 }]}
-          >
-            <Text variant="label" style={styles.demoLabel}>
-              Try demo
-            </Text>
-          </Pressable>
-          {serverSettingAllowed && (
+          <View style={styles.signInRow}>
+            <Text tone="secondary">Already have an account?</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Server address settings"
-              onPress={() => navigation.navigate('ServerSettings')}
-              hitSlop={8}
-              style={({ pressed }) => [styles.demo, pressed && { opacity: 0.6 }]}
+              accessibilityLabel="Sign in"
+              onPress={() => navigation.navigate('SignIn')}
+              hitSlop={10}
+              style={({ pressed }) => [styles.link, pressed && { opacity: 0.6 }]}
             >
-              <Text variant="caption" tone="secondary">
-                Server: {(apiUrl() ?? 'not set').replace(/^https?:\/\//, '').replace(/\/api$/, '')}
+              <Text variant="label" style={styles.linkText}>
+                Sign in
               </Text>
             </Pressable>
-          )}
-        </SafeAreaView>
+          </View>
+          <View style={styles.extras}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Try demo"
+              onPress={demo.enter}
+              hitSlop={8}
+              style={({ pressed }) => [styles.link, pressed && { opacity: 0.6 }]}
+            >
+              <Text variant="caption" tone="secondary" style={styles.underline}>
+                Try demo
+              </Text>
+            </Pressable>
+            {serverSettingAllowed && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Server address settings"
+                onPress={() => navigation.navigate('ServerSettings')}
+                hitSlop={8}
+                style={({ pressed }) => [styles.link, pressed && { opacity: 0.6 }]}
+              >
+                <Text variant="caption" tone="secondary">
+                  Server: {(apiUrl() ?? 'not set').replace(/^https?:\/\//, '').replace(/\/api$/, '')}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.taxi },
+  safe: { flex: 1, backgroundColor: colors.canvas },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, backgroundColor: colors.canvas },
-  hero: {
-    flexGrow: 1,
-    backgroundColor: colors.taxi,
-    paddingHorizontal: space.xl,
-    paddingTop: space.xl,
-    paddingBottom: space.lg,
-  },
-  heroInner: {
-    flexGrow: 1,
+  scroll: { flexGrow: 1 },
+  copy: {
     width: '100%',
     maxWidth: size.contentMax,
     alignSelf: 'center',
-    gap: space.lg,
+    paddingHorizontal: space.xl,
+    paddingTop: space.xl,
+    gap: space.xxl,
   },
-  wordmark: {
-    fontFamily: fonts.wideBold,
-    fontSize: 22,
-    lineHeight: 28,
-    letterSpacing: -0.5,
-    marginBottom: space.xl,
-  },
-  lede: { fontSize: 17, lineHeight: 25, maxWidth: 320 },
-  // The car sits on the green band, like a taxi on the road.
-  car: {
-    alignItems: 'flex-end',
-    marginTop: 'auto',
-    paddingTop: space.md,
-    marginRight: -space.md,
-    marginBottom: -space.lg,
-  },
-  band: { height: 30, backgroundColor: colors.brand },
-  bandTrim: { height: 10, backgroundColor: colors.taxi },
+  message: { gap: space.lg },
+  lede: { maxWidth: 322 },
+  hero: { flexGrow: 1, minHeight: 300, marginTop: space.sm },
+  photo: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' },
+  fadeTop: { position: 'absolute', top: 0, left: 0, right: 0, height: 64 },
+  fadeBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 96 },
+  fade: { position: 'absolute', left: 0, right: 0 },
   actions: {
     width: '100%',
     maxWidth: size.contentMax,
     alignSelf: 'center',
-    gap: space.md,
     paddingHorizontal: space.xl,
-    paddingTop: space.xl,
-    paddingBottom: space.lg,
-    backgroundColor: colors.canvas,
+    paddingBottom: space.md,
+    gap: space.md,
   },
-  demo: {
-    alignSelf: 'center',
-    minHeight: 48,
+  signInRow: {
+    flexDirection: 'row',
     justifyContent: 'center',
-    paddingHorizontal: space.lg,
+    alignItems: 'center',
+    gap: space.xs,
+    minHeight: 44,
   },
-  demoLabel: { textDecorationLine: 'underline' },
+  link: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space.xs },
+  linkText: { fontFamily: fonts.semibold, color: colors.text },
+  extras: { flexDirection: 'row', justifyContent: 'center', gap: space.lg },
+  underline: { textDecorationLine: 'underline' },
 });

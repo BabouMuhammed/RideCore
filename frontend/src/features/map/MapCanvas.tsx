@@ -95,7 +95,7 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
               <Text
                 variant="caption"
                 style={{
-                  color: pin.id === 'driver' ? colors.onTaxi : colors.onBrand,
+                  color: pin.id === 'driver' ? colors.onBrand : colors.onBrand,
                 }}
               >
                 {pin.label}
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 5,
   },
-  driverPin: { backgroundColor: colors.taxi },
+  driverPin: { backgroundColor: colors.brand },
   notice: {
     position: 'absolute',
     top: 0,

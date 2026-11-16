@@ -71,12 +71,9 @@ test('real booking interactions select addresses, request server fares and creat
   await waitFor(() => expect(h.controller.getSnapshot().loading).toBe(false));
   for (const kind of ['Pickup', 'Destination']) {
     await fireEvent.press(
-      screen.getByRole('button', { name: new RegExp('^' + kind + ',') }),
+      screen.getByRole('button', { name: new RegExp('^' + kind + ':') }),
     );
-    await fireEvent.changeText(
-      screen.getByLabelText('Search address or landmark'),
-      kind + ' landmark',
-    );
+    await fireEvent.changeText(screen.getByLabelText(kind), kind + ' landmark');
     await fireEvent.press(
       screen.getByRole('button', { name: 'Search places' }),
     );
@@ -86,16 +83,16 @@ test('real booking interactions select addresses, request server fares and creat
       }),
     );
   }
-  await fireEvent.press(screen.getByRole('button', { name: 'See fares' }));
-  await screen.findByRole('button', { name: 'Continue with this ride' });
+  await fireEvent.press(screen.getByRole('button', { name: 'Choose a ride' }));
+  await screen.findByRole('button', { name: 'Continue' });
   expect(h.api.estimate).toHaveBeenCalledTimes(3);
   expect(h.api.create).not.toHaveBeenCalled();
   await fireEvent.press(
-    screen.getByRole('button', { name: 'Continue with this ride' }),
+    screen.getByRole('button', { name: 'Continue' }),
   );
   expect(h.api.create).not.toHaveBeenCalled();
-  await fireEvent.press(screen.getByRole('button', { name: 'Request ride' }));
-  expect(await screen.findByText('Connecting to a driver')).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: 'Confirm ride' }));
+  expect(await screen.findByText('Finding your driver')).toBeOnTheScreen();
   expect(h.api.create).toHaveBeenCalledWith(
     'test-only-credential',
     {
@@ -111,7 +108,7 @@ test('cancellation requires selecting a reason and explicit confirmation', async
   const h = fixture();
   h.api.list.mockResolvedValue([trip]);
   await mount(h, <BookingHome />);
-  await screen.findByText('Connecting to a driver');
+  await screen.findByText('Finding your driver');
   await fireEvent.press(screen.getByRole('button', { name: 'Cancel ride' }));
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
   await fireEvent.press(screen.getByRole('button', { name: 'Changed plans' }));
@@ -199,7 +196,7 @@ test('denied foreground permission still permits address search and manual map s
   ).toBeOnTheScreen();
   expect(Location.getCurrentPositionAsync).not.toHaveBeenCalled();
   await fireEvent.changeText(
-    screen.getByLabelText('Search address or landmark'),
+    screen.getByLabelText('Pickup'),
     'Pickup landmark',
   );
   await fireEvent.press(screen.getByRole('button', { name: 'Search places' }));
@@ -418,7 +415,7 @@ test('late completed state replaces active sheet without offering active-only ac
   const h = fixture();
   h.api.list.mockResolvedValue([trip]);
   await mount(h, <BookingHome />);
-  await screen.findByText('Connecting to a driver');
+  await screen.findByText('Finding your driver');
   h.api.list.mockResolvedValue([{ ...trip, status: 'completed' }]);
   h.api.detail.mockResolvedValue({
     ...trip,
@@ -441,25 +438,25 @@ test('journey bootstrap shows loading instead of offering booking before active-
   await mount(h, <BookingHome />);
   expect(await screen.findByText('Restoring your journey')).toBeOnTheScreen();
   expect(
-    screen.queryByRole('button', { name: 'See fares' }),
+    screen.queryByRole('button', { name: 'Choose a ride' }),
   ).not.toBeOnTheScreen();
   await act(async () => {
     gate.resolve([trip]);
     await h.controller.refresh();
   });
-  expect(await screen.findByText('Connecting to a driver')).toBeOnTheScreen();
+  expect(await screen.findByText('Finding your driver')).toBeOnTheScreen();
 });
 test('authoritative active-ride reconciliation supersedes an open address-selection sheet', async () => {
   const h = fixture();
   await mount(h, <BookingHome />);
   await waitFor(() => expect(h.controller.getSnapshot().loading).toBe(false));
   await fireEvent.press(screen.getByRole('button', { name: 'Where to?' }));
-  await fireEvent.press(screen.getByRole('button', { name: /^Pickup,/ }));
-  expect(screen.getByLabelText('Search address or landmark')).toBeOnTheScreen();
+  await fireEvent.press(screen.getByRole('button', { name: /^Pickup:/ }));
+  expect(screen.getByLabelText('Pickup')).toBeOnTheScreen();
   h.api.list.mockResolvedValue([trip]);
   await act(() => h.controller.refresh());
-  expect(await screen.findByText('Connecting to a driver')).toBeOnTheScreen();
+  expect(await screen.findByText('Finding your driver')).toBeOnTheScreen();
   expect(
-    screen.queryByLabelText('Search address or landmark'),
+    screen.queryByLabelText('Pickup'),
   ).not.toBeOnTheScreen();
 });

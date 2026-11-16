@@ -55,7 +55,7 @@ export function ServerSettingsScreen({
     <Screen
       header={
         <BrandHeader
-          title="Server address"
+          title="Server *address*"
           subtitle="Connect this phone to the laptop running the RideCore backend."
           onBack={() => navigation.goBack()}
           backDisabled={busy}
