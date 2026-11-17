@@ -171,3 +171,25 @@ test('rider availability uses the actual nearby endpoint without exposing coordi
     kind: 'contract',
   });
 });
+test('nearby drivers keep the positions the server reports and reject malformed ones', async () => {
+  const h = adapter([
+    {
+      driverId: 'a'.repeat(24),
+      location: { type: 'Point', coordinates: [-16.678, 13.438] },
+      vehicle: { make: 'Toyota', model: 'Corolla', vehicleType: 'economy' },
+    },
+  ]);
+  expect(
+    await h.api.nearbyDrivers('test-only-credential', [-16.68, 13.44]),
+  ).toEqual([
+    { id: 'a'.repeat(24), point: [-16.678, 13.438], category: 'economy' },
+  ]);
+  const url = new URL(h.fetcher.mock.calls[0]![0]);
+  expect(url.pathname).toBe('/api/drivers/nearby');
+  expect(url.searchParams.get('lat')).toBe('13.44');
+  await expect(
+    adapter([
+      { driverId: 'x', location: { coordinates: [0, 95] }, vehicle: { vehicleType: 'economy' } },
+    ]).api.nearbyDrivers('test-only-credential', [-16.68, 13.44]),
+  ).rejects.toBeDefined();
+});

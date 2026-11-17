@@ -168,6 +168,11 @@ export function publicSnapshot(value: unknown): PublicSnapshot {
       text(record(v.vehicle)[field]);
   return v as unknown as PublicSnapshot;
 }
+export type NearbyDriver = {
+  id: string;
+  point: Coordinate;
+  category: Category;
+};
 export function createJourneyApi(
   baseUrl = apiUrl(),
   fetcher?: ApiFetch,
@@ -215,6 +220,37 @@ export function createJourneyApi(
         if (!categories.includes(category as Category))
           throw new AppError('contract');
         return category as Category;
+      });
+    },
+    /** Online, approved, free drivers near a point, with their positions. */
+    nearbyDrivers: async (
+      token: string,
+      point: Coordinate,
+      signal?: AbortSignal,
+    ): Promise<NearbyDriver[]> => {
+      coordinate(point);
+      const query = new URLSearchParams({
+        lat: String(point[1]),
+        lng: String(point[0]),
+      });
+      const values = await call(
+        '/drivers/nearby?' + query,
+        'GET',
+        undefined,
+        token,
+        signal,
+      );
+      if (!Array.isArray(values)) throw new AppError('contract');
+      return values.map((value) => {
+        const v = record(value);
+        const category = record(v.vehicle).vehicleType;
+        if (!categories.includes(category as Category))
+          throw new AppError('contract');
+        return {
+          id: String(v.driverId),
+          point: coordinate(record(v.location).coordinates),
+          category: category as Category,
+        };
       });
     },
     estimate: async (

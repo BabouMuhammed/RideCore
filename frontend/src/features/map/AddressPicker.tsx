@@ -20,6 +20,10 @@ export function AddressPicker({
   onConfirm,
   onClose,
   recent = [],
+  initialQuery = '',
+  panning = false,
+  onPanMap,
+  onUnpin,
 }: {
   kind: 'pickup' | 'destination';
   pin: Coordinate | null;
@@ -28,10 +32,18 @@ export function AddressPicker({
   onClose(): void;
   /** Places from the rider's history, offered as one-tap choices. */
   recent?: Stop[];
+  /** Search text to start with (and search for straight away). */
+  initialQuery?: string;
+  /** True while the pin follows the centre of the map as it is moved. */
+  panning?: boolean;
+  /** Start choosing by moving the map. Absent where the map can't pan. */
+  onPanMap?(): void;
+  /** Drop the pin and return to searching. */
+  onUnpin?(): void;
 }) {
   const [onMap, setOnMap] = useState(false);
   const { runtime } = useDemo();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [draft, setDraft] = useState({ key: '', value: '' });
   const [lookup, setLookup] = useState<{
     key: string;
@@ -57,24 +69,40 @@ export function AddressPicker({
   useEffect(() => {
     const abort = new AbortController();
     const point = JSON.parse(pinKey) as Coordinate | null;
-    if (point)
-      void maps
-        .reverse(point, abort.signal)
-        .then((stop) => {
-          if (!abort.signal.aborted)
-            setLookup({ key: pinKey, address: stop?.address ?? '' });
-        })
-        .catch(() => {
-          if (!abort.signal.aborted)
-            setLookup({
-              key: pinKey,
-              address: '',
-              error:
-                'Address lookup is unavailable. Enter a pickup point or landmark for this pin.',
-            });
-        });
-    return () => abort.abort();
+    // Wait for the map to settle: the public geocoder allows ~1 request/second.
+    const timer = setTimeout(() => {
+      if (point)
+        void maps
+          .reverse(point, abort.signal)
+          .then((stop) => {
+            if (!abort.signal.aborted)
+              setLookup({ key: pinKey, address: stop?.address ?? '' });
+          })
+          .catch(() => {
+            if (!abort.signal.aborted)
+              setLookup({
+                key: pinKey,
+                address: '',
+                error:
+                  'Address lookup is unavailable. Type a landmark for this pin.',
+              });
+          });
+    }, 500);
+    return () => {
+      clearTimeout(timer);
+      abort.abort();
+    };
   }, [pinKey, maps]);
+  // A suggested place arrives as search text: look it up straight away.
+  const searchedInitial = useRef(false);
+  useEffect(() => {
+    if (initialQuery.trim().length >= 3 && !searchedInitial.current) {
+      searchedInitial.current = true;
+      void search();
+    }
+    // Runs once for the initial text only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => () => pending.current?.abort(), []);
   async function search() {
     pending.current?.abort();
@@ -152,7 +180,9 @@ export function AddressPicker({
           <View style={styles.hint}>
             <Icon name="move" size={16} color={colors.secondary} />
             <Text variant="caption" tone="secondary">
-              Tap the map to move the pin.
+              {panning
+                ? 'Move the map to adjust the pin.'
+                : 'Tap the map to move the pin.'}
             </Text>
           </View>
           <Button
@@ -196,6 +226,7 @@ export function AddressPicker({
             <ListRow key={index} icon="pin" title={stop.address} onPress={() => onConfirm(stop)} />
           ))}
           <View>
+            {kind === 'pickup' && (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={runtime ? 'Use demo pickup location' : 'Use my current location'}
@@ -209,10 +240,11 @@ export function AddressPicker({
               </Text>
               <Icon name="arrowRight" size={18} />
             </Pressable>
+            )}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Choose on map"
-              onPress={() => setOnMap(true)}
+              onPress={() => (onPanMap ? onPanMap() : setOnMap(true))}
               style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]}
             >
               <Icon name="map" size={20} color={colors.brand} />
@@ -286,7 +318,11 @@ export function AddressPicker({
           {error ?? lookupError}
         </Text>
       )}
-      <Button label="Go back" variant="secondary" onPress={onClose} />
+      <Button
+        label="Go back"
+        variant="secondary"
+        onPress={pinned && onUnpin ? onUnpin : onClose}
+      />
     </>
   );
 }

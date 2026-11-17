@@ -69,11 +69,13 @@ test('real booking interactions select addresses, request server fares and creat
   expect(await screen.findByText('Where to?')).toBeOnTheScreen();
   await fireEvent.press(screen.getByRole('button', { name: 'Where to?' }));
   await waitFor(() => expect(h.controller.getSnapshot().loading).toBe(false));
-  for (const kind of ['Pickup', 'Destination']) {
-    await fireEvent.press(
-      screen.getByRole('button', { name: new RegExp('^' + kind + ':') }),
+  // "Where to?" opens the destination search; with no known pickup, the
+  // pickup search follows it.
+  for (const kind of ['Destination', 'Pickup']) {
+    await fireEvent.changeText(
+      await screen.findByLabelText(kind),
+      kind + ' landmark',
     );
-    await fireEvent.changeText(screen.getByLabelText(kind), kind + ' landmark');
     await fireEvent.press(
       screen.getByRole('button', { name: 'Search places' }),
     );
@@ -451,12 +453,9 @@ test('authoritative active-ride reconciliation supersedes an open address-select
   await mount(h, <BookingHome />);
   await waitFor(() => expect(h.controller.getSnapshot().loading).toBe(false));
   await fireEvent.press(screen.getByRole('button', { name: 'Where to?' }));
-  await fireEvent.press(screen.getByRole('button', { name: /^Pickup:/ }));
-  expect(screen.getByLabelText('Pickup')).toBeOnTheScreen();
+  expect(screen.getByLabelText('Destination')).toBeOnTheScreen();
   h.api.list.mockResolvedValue([trip]);
   await act(() => h.controller.refresh());
   expect(await screen.findByText('Finding your driver')).toBeOnTheScreen();
-  expect(
-    screen.queryByLabelText('Pickup'),
-  ).not.toBeOnTheScreen();
+  expect(screen.queryByLabelText('Destination')).not.toBeOnTheScreen();
 });

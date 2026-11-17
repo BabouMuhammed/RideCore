@@ -1,9 +1,18 @@
-import type { PropsWithChildren } from 'react';
+import { useEffect, type PropsWithChildren } from 'react';
+import { useWindowDimensions } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/tokens';
-export function JourneySheet({ children }: PropsWithChildren) {
+export function JourneySheet({
+  children,
+  onHeight,
+}: PropsWithChildren<{ onHeight?(height: number): void }>) {
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  // The sheet rests at its first snap point (55% of the window).
+  useEffect(() => {
+    onHeight?.(height * 0.55);
+  }, [height, onHeight]);
   return (
     <BottomSheet
       index={0}

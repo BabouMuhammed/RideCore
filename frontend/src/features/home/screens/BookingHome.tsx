@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as Location from 'expo-location';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { RiderHome } from './RiderHome';
 import { useDemo } from '../../../demo/DemoProvider';
@@ -13,7 +14,12 @@ import { Wordmark } from '../../../components/brand/Wordmark';
 import { JourneySheet } from '../../../components/sheets/JourneySheet';
 import { MapCanvas } from '../../map/MapCanvas';
 import { AddressPicker } from '../../map/AddressPicker';
-import { createMapService, initialCenter } from '../../../services/geo';
+import {
+  createMapService,
+  initialCenter,
+  makeStop,
+} from '../../../services/geo';
+import { useNearbyDrivers } from '../../journey/useNearbyDrivers';
 import {
   categories,
   type Category,
@@ -71,12 +77,6 @@ export function BookingHome({
     duration?: number | null;
     error?: string;
   }>({ key: '', points: [] });
-  const [maps] = useState(() => runtime?.maps ?? createMapService());
-  useEffect(() => {
-    if (service) {
-      onServiceUsed?.();
-    }
-  }, [service, onServiceUsed]);
   const mounted = useRef(true),
     operation = useRef(false);
   useEffect(() => {
@@ -85,10 +85,75 @@ export function BookingHome({
       mounted.current = false;
     };
   }, []);
+  const [maps] = useState(() => runtime?.maps ?? createMapService());
+  // Where the rider is, when the device will tell us.
+  const [here, setHere] = useState<Coordinate | null>(null);
+  // Choosing a place by moving the map under a fixed centre pin.
+  const [mapPick, setMapPick] = useState<{ start: Coordinate } | null>(null);
+  const [sheetHeight, setSheetHeight] = useState(0);
+  const [seedQuery, setSeedQuery] = useState('');
+  const located = useRef<'no' | 'silent' | 'asked'>('no');
+  /**
+   * Finds the rider and, if no pickup is chosen yet, uses that spot as the
+   * pickup (like Uber). `ask` allows the permission prompt; without it we
+   * only use a permission that was already granted. Failure is silent: the
+   * rider can always search or use the map.
+   */
+  const locate = useCallback(
+    async (ask: boolean) => {
+      if (runtime || located.current === 'asked') return;
+      if (!ask && located.current === 'silent') return;
+      located.current = ask ? 'asked' : 'silent';
+      try {
+        const permission = ask
+          ? await Location.requestForegroundPermissionsAsync()
+          : await Location.getForegroundPermissionsAsync?.();
+        if (!permission?.granted) return;
+        const result = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!result?.coords || !mounted.current) return;
+        const point: Coordinate = [
+          result.coords.longitude,
+          result.coords.latitude,
+        ];
+        setHere(point);
+        const found = await maps.reverse(point).catch(() => null);
+        if (!mounted.current) return;
+        const stop = found
+          ? makeStop(found.address, point)
+          : makeStop('My current location', point);
+        setPickup((current) => current ?? stop);
+        // A pickup picker opened only because we had no pickup can close.
+        setSelecting((current) => (current === 'pickup' ? null : current));
+      } catch {
+        // Location is optional.
+      }
+    },
+    [maps, runtime],
+  );
+  useEffect(() => {
+    // After mount, use the rider's position if they already allowed it.
+    const timer = setTimeout(() => void locate(false), 0);
+    return () => clearTimeout(timer);
+  }, [locate]);
+  useEffect(() => {
+    if (service) {
+      onServiceUsed?.();
+    }
+  }, [service, onServiceUsed]);
   const trip = state.trip;
   const from = trip?.pickup ?? pickup,
     to = trip?.destination ?? destination;
   const driverPoint = state.location?.point;
+  const cars = useNearbyDrivers(
+    trip
+      ? null
+      : (pickup?.location.coordinates ??
+          here ??
+          state.history[0]?.pickup.location.coordinates ??
+          initialCenter),
+  );
   // Planned pickup-to-destination road route. Tracking pins are actual samples;
   // driver approach ETA/navigation is deliberately not inferred from this route.
   const routeKey = JSON.stringify([
@@ -170,12 +235,37 @@ export function BookingHome({
       ...(driverPoint && trip && isActive(trip)
         ? [{ id: 'driver', point: driverPoint, label: 'Driver' }]
         : []),
-      ...(pin && selecting && !trip && !state.loading
+      ...(pin && selecting && !trip && !state.loading && !mapPick
         ? [{ id: 'selected', point: pin, label: 'Selected' }]
         : []),
+      ...(trip ? [] : cars),
     ],
-    [from, to, driverPoint, trip, pin, selecting, state.loading],
+    [from, to, driverPoint, trip, pin, selecting, state.loading, mapPick, cars],
   );
+  const mapCenter =
+    mapPick?.start ??
+    pin ??
+    from?.location.coordinates ??
+    here ??
+    initialCenter;
+  const picking = !!selecting && !trip && !state.loading;
+  function plan(recentDestination?: Stop, search?: string) {
+    setPlanning(true);
+    setConfirm(false);
+    setSeedQuery(search ?? '');
+    if (recentDestination) {
+      setDestination(recentDestination);
+      setEstimates({});
+      setSelecting(pickup ? null : 'pickup');
+    } else setSelecting('destination');
+    void locate(true);
+  }
+  function stopPicking() {
+    setSelecting(null);
+    setPin(null);
+    setMapPick(null);
+    setSeedQuery('');
+  }
   async function estimate() {
     if (!pickup || !destination || operation.current) return;
     operation.current = true;
@@ -239,14 +329,12 @@ export function BookingHome({
     return (
       <RiderHome
         history={state.history}
-        onPlan={(service, recentDestination) => {
+        center={here ?? state.history[0]?.pickup.location.coordinates ?? initialCenter}
+        located={!!here}
+        cars={cars}
+        onPlan={(service, recentDestination, search) => {
           if (service) setCategory(service);
-          if (recentDestination) {
-            setDestination(recentDestination);
-            setEstimates({});
-            setConfirm(false);
-          }
-          setPlanning(true);
+          plan(recentDestination, search);
         }}
       />
     );
@@ -255,18 +343,34 @@ export function BookingHome({
     <View style={styles.root}>
       {runtime ? (
         <DemoMap
-          center={pin ?? from?.location.coordinates ?? initialCenter}
+          center={mapCenter}
           pins={pins}
           route={route}
-          onSelect={selecting && !trip && !state.loading ? setPin : undefined}
+          onSelect={picking && !mapPick ? setPin : undefined}
         />
       ) : (
         <MapCanvas
-          center={pin ?? from?.location.coordinates ?? initialCenter}
+          center={mapCenter}
           pins={pins}
           route={route}
-          onSelect={selecting && !trip && !state.loading ? setPin : undefined}
+          onSelect={picking && !mapPick ? setPin : undefined}
+          onCenterChange={picking && mapPick ? setPin : undefined}
+          bottomInset={picking && mapPick ? sheetHeight : 0}
         />
+      )}
+      {picking && mapPick && (
+        // Fixed pin over the middle of the visible map; the map moves under it.
+        <View
+          pointerEvents="none"
+          style={[styles.centerPin, { bottom: sheetHeight }]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <View style={styles.centerPinHead}>
+            <Icon name="pin" size={20} color={colors.onBrand} />
+          </View>
+          <View style={styles.centerPinStem} />
+        </View>
       )}
       <View
         style={[
@@ -280,15 +384,21 @@ export function BookingHome({
             icon="back"
             label="Back to home"
             onPress={() => {
+              if (mapPick) {
+                // Back from the map goes to the search list first.
+                setMapPick(null);
+                setPin(null);
+                return;
+              }
               setPlanning(false);
-              setSelecting(null);
+              stopPicking();
             }}
           />
         ) : (
           <Wordmark size={16} />
         )}
       </View>
-      <JourneySheet>
+      <JourneySheet onHeight={setSheetHeight}>
         {state.loading ? (
           <Loading label="Restoring your journey" />
         ) : selecting && !trip ? (
@@ -297,15 +407,32 @@ export function BookingHome({
             kind={selecting}
             pin={pin}
             onPin={setPin}
-            onClose={() => setSelecting(null)}
+            onClose={stopPicking}
             recent={recentStops}
+            initialQuery={selecting === 'destination' ? seedQuery : ''}
+            panning={!!mapPick}
+            onPanMap={
+              runtime
+                ? undefined
+                : () => {
+                    setMapPick({ start: mapCenter });
+                    setPin(mapCenter);
+                  }
+            }
+            onUnpin={() => {
+              setMapPick(null);
+              setPin(null);
+            }}
             onConfirm={(stop) => {
               setEstimates({});
               setConfirm(false);
+              const next =
+                selecting === 'destination' && !pickup ? 'pickup' : null;
               if (selecting === 'pickup') setPickup(stop);
               else setDestination(stop);
-              setSelecting(null);
-              setPin(null);
+              stopPicking();
+              // Uber-style: destination first, then pickup if we don't know it.
+              setSelecting(next);
             }}
           />
         ) : visibleContext === 'cancel' ? (
@@ -697,6 +824,25 @@ const styles = StyleSheet.create({
   // The back button is already a white bordered square.
   brandBare: { paddingVertical: 0, paddingHorizontal: 0, backgroundColor: 'transparent', shadowOpacity: 0, elevation: 0 },
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+  // The stem's tip sits exactly on the centre of the visible map.
+  centerPin: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 46,
+  },
+  centerPinHead: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerPinStem: { width: 3, height: 12, backgroundColor: colors.brand },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   edit: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
   estimates: { flexDirection: 'row', gap: space.xl },

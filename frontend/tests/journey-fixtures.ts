@@ -23,6 +23,10 @@ export function journeyApi(): jest.Mocked<JourneyApi> {
       ReturnType<JourneyApi['nearby']>,
       Parameters<JourneyApi['nearby']>
     >(async () => []),
+    nearbyDrivers: jest.fn<
+      ReturnType<JourneyApi['nearbyDrivers']>,
+      Parameters<JourneyApi['nearbyDrivers']>
+    >(async () => []),
     estimate: jest.fn<
       ReturnType<JourneyApi['estimate']>,
       Parameters<JourneyApi['estimate']>

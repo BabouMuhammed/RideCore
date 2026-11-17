@@ -13,16 +13,26 @@ import { Text } from '../../components/ui/Text';
 import { Button } from '../../components/ui/Button';
 import { colors } from '../../theme/tokens';
 import { osmStyle, osmAttribution } from './osmStyle';
-import type { MapCanvasProps } from './MapCanvas.types';
+import { cameraKey, type MapCanvasProps } from './MapCanvas.types';
+import { Icon } from '../../components/ui/Icon';
 
 // Native map: MapLibre with OpenStreetMap tiles. No account, key or paid SDK.
-export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
+export function MapCanvas(props: MapCanvasProps) {
+  const { center, pins, route, onSelect, onCenterChange, bottomInset = 0 } =
+    props;
+  const lastCamera = useRef('');
   const insets = useSafeAreaInsets();
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const camera = useRef<CameraRef>(null);
   useEffect(() => {
-    const points = [...pins.map((pin) => pin.point), ...(route ?? [])];
+    const key = cameraKey({ center, pins, route });
+    if (key === lastCamera.current) return;
+    lastCamera.current = key;
+    const points = [
+      ...pins.filter((pin) => pin.kind !== 'car').map((pin) => pin.point),
+      ...(route ?? []),
+    ];
     if (points.length > 1) {
       const xs = points.map((p) => p[0]),
         ys = points.map((p) => p[1]);
@@ -35,6 +45,12 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
       );
     } else camera.current?.easeTo({ center, zoom: 14, duration: 400 });
   }, [center, pins, route]);
+  useEffect(() => {
+    void camera.current?.setStop({
+      padding: { top: 0, left: 0, right: 0, bottom: bottomInset },
+      duration: 200,
+    });
+  }, [bottomInset]);
   if (failed)
     return (
       <View style={styles.notice}>
@@ -59,6 +75,11 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
         attribution={false}
         compass={false}
         onDidFailLoadingMap={() => setFailed(true)}
+        onRegionDidChange={(event) => {
+          const view = event.nativeEvent;
+          if (onCenterChange && view?.userInteraction && view.center)
+            onCenterChange([view.center[0], view.center[1]]);
+        }}
         onPress={(event) => {
           const lngLat = event.nativeEvent?.lngLat;
           if (onSelect && lngLat) onSelect([lngLat[0], lngLat[1]]);
@@ -87,6 +108,11 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
         )}
         {pins.map((pin) => (
           <Marker key={pin.id} id={pin.id} lngLat={pin.point}>
+            {pin.kind === 'car' ? (
+              <View style={styles.car} accessible accessibilityLabel={pin.label}>
+                <Icon name="car" size={18} />
+              </View>
+            ) : (
             <View
               style={[styles.pin, pin.id === 'driver' && styles.driverPin]}
               accessible
@@ -101,6 +127,7 @@ export function MapCanvas({ center, pins, route, onSelect }: MapCanvasProps) {
                 {pin.label}
               </Text>
             </View>
+            )}
           </Marker>
         ))}
       </Map>
@@ -124,6 +151,16 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   driverPin: { backgroundColor: colors.brand },
+  car: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   notice: {
     position: 'absolute',
     top: 0,

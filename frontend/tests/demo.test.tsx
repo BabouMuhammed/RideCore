@@ -23,18 +23,15 @@ test('demo completes a ride offline, records a sample payment and exits without 
     jest.mocked(SecureStore.setItemAsync).mockClear();
     jest.mocked(SecureStore.deleteItemAsync).mockClear();
     await fireEvent.press(screen.getByRole('button', { name: 'Where to?' }));
-    await fireEvent.press(screen.getByRole('button', { name: /^Pickup:/ }));
+    // Destination first, then the pickup search opens by itself.
     await fireEvent.press(
-      screen.getByRole('button', {
-        name: 'Senegambia Beach, Kololi, Demo place',
+      await screen.findByRole('button', {
+        name: 'Banjul International Airport, Demo place',
       }),
     );
     await fireEvent.press(
-      screen.getByRole('button', { name: /^Destination:/ }),
-    );
-    await fireEvent.press(
-      screen.getByRole('button', {
-        name: 'Banjul International Airport, Demo place',
+      await screen.findByRole('button', {
+        name: 'Senegambia Beach, Kololi, Demo place',
       }),
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Choose a ride' }));

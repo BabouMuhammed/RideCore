@@ -80,6 +80,20 @@ export function createDemoRuntime() {
   };
   const journeyApi: JourneyApi = {
     nearby: async () => ['economy', 'comfort', 'xl'],
+    // Sample cars scattered around the requested point.
+    nearbyDrivers: async (_token, [lng, lat]) =>
+      (
+        [
+          [0.004, 0.003, 'economy'],
+          [-0.005, 0.002, 'comfort'],
+          [0.002, -0.004, 'economy'],
+          [-0.003, -0.003, 'xl'],
+        ] as const
+      ).map(([dx, dy, category], index) => ({
+        id: 'demo-driver-' + index,
+        point: [lng + dx, lat + dy],
+        category,
+      })),
     estimate: async (_token, booking) => ({
       estimatedFare: fares[booking.vehicleType],
       currency: 'GMD',

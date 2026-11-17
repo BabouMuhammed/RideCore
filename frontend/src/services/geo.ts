@@ -23,7 +23,9 @@ export type RouteInfo = {
   duration: number | null;
 };
 
-export const initialCenter: Coordinate = [-16.579, 13.454]; // Region, never claimed as rider GPS.
+// Serrekunda, the centre of the Kombos, where the map opens when the
+// rider's position is unknown. Never presented as the rider's location.
+export const initialCenter: Coordinate = [-16.678, 13.438];
 
 export function makeStop(address: string, coordinates: Coordinate): Stop {
   if (!address.trim() || address.trim().length > 120)
