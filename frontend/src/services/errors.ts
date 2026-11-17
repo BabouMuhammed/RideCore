@@ -1,4 +1,5 @@
 export type ErrorKind =
+  | 'adminRequired'
   | 'unavailable'
   | 'changed'
   | 'conflict'
@@ -20,6 +21,7 @@ export type ErrorKind =
   | 'taken'
   | 'cancelled';
 const messages: Record<ErrorKind, string> = {
+  adminRequired: 'Use an active administrator account to sign in here.',
   unavailable:
     'This information is no longer available. Refresh to see the latest status.',
   changed:
@@ -30,7 +32,7 @@ const messages: Record<ErrorKind, string> = {
   unauthenticated: 'Your sign-in is no longer valid. Please sign in again.',
   network: 'Unable to connect. Check your connection and try again.',
   server: 'RideCore is temporarily unavailable. Please try again.',
-  role: 'This app is for rider and driver accounts. Administrators use the admin tools.',
+  role: 'Your account cannot access this area. Please sign in with an authorized account.',
   otp: 'The code is incorrect, expired or no longer available. Request a new code when available.',
   cooldown: 'Please wait before requesting another verification code.',
   rate: 'Too many attempts. Please wait and try again later.',

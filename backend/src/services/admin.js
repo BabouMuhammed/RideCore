@@ -13,6 +13,114 @@ const collections = {
   rides: Ride,
   payments: Payment,
 };
+// Global counts deliberately do not use the paginated administrative lists.
+// Separate reads are current database observations, not a transactional snapshot.
+export async function overview() {
+  const [
+    registeredRiders,
+    registeredDrivers,
+    pending,
+    online,
+    activeRides,
+    completedRides,
+    cancelledRides,
+    recordedPayments,
+  ] = await Promise.all([
+    User.countDocuments({ role: "rider" }),
+    User.countDocuments({ role: "driver" }),
+    DriverProfile.aggregate([
+      { $match: { verificationStatus: "pending" } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "account",
+        },
+      },
+      { $match: { account: { $elemMatch: { role: "driver" } } } },
+      { $count: "total" },
+    ]),
+    DriverProfile.aggregate([
+      {
+        $match: {
+          verificationStatus: "approved",
+          availabilityStatus: "online",
+          "currentLocation.type": "Point",
+          "currentLocation.coordinates.0": {
+            $type: "number",
+            $gte: -180,
+            $lte: 180,
+          },
+          "currentLocation.coordinates.1": {
+            $type: "number",
+            $gte: -90,
+            $lte: 90,
+          },
+          "currentLocation.coordinates.2": { $exists: false },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "account",
+        },
+      },
+      {
+        $match: { account: { $elemMatch: { role: "driver", isActive: true } } },
+      },
+      {
+        $lookup: {
+          from: "vehicles",
+          localField: "user",
+          foreignField: "driver",
+          as: "vehicle",
+        },
+      },
+      {
+        $match: { vehicle: { $elemMatch: { verificationStatus: "approved" } } },
+      },
+      {
+        $lookup: {
+          from: "rides",
+          let: { driverId: "$user" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$driver", "$$driverId"] },
+                    { $eq: ["$active", true] },
+                  ],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: "activeRides",
+        },
+      },
+      { $match: { "activeRides.0": { $exists: false } } },
+      { $count: "total" },
+    ]),
+    Ride.countDocuments({ active: true }),
+    Ride.countDocuments({ status: "completed" }),
+    Ride.countDocuments({ status: "cancelled" }),
+    Payment.countDocuments(),
+  ]);
+  return {
+    registeredRiders,
+    registeredDrivers,
+    pendingDriverApprovals: pending[0]?.total ?? 0,
+    onlineDrivers: online[0]?.total ?? 0,
+    activeRides,
+    completedRides,
+    cancelledRides,
+    recordedPayments,
+  };
+}
 export async function listResources(kind, page) {
   const pageNumber = /^\d{1,6}$/.test(String(page || "1"))
     ? Math.max(1, Number(page || 1))

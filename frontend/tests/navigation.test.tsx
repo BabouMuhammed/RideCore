@@ -12,6 +12,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import App from '../App';
 import * as SplashScreen from 'expo-splash-screen';
 import { RootNavigator } from '../src/navigation/RootNavigator';
+// Drive userEvent's intentional interaction delays deterministically, as in auth-ui.
+beforeEach(() => jest.useFakeTimers());
+afterEach(() => jest.useRealTimers());
 jest.mock('../src/services/journey-api', () => ({
   ...jest.requireActual('../src/services/journey-api'),
   createJourneyApi: () => jest.requireActual('./journey-fixtures').journeyApi(),
@@ -32,7 +35,7 @@ test('native splash hides after the application root lays out', async () => {
   expect(SplashScreen.hideAsync).toHaveBeenCalled();
 });
 test('sign-in route is a real credential form and back returns to welcome', async () => {
-  const user = userEvent.setup();
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
   await render(<App />);
   await user.press(await screen.findByRole('button', { name: 'Sign in' }));
   expect(await screen.findByLabelText('Password')).toBeOnTheScreen();
@@ -43,11 +46,9 @@ test('sign-in route is a real credential form and back returns to welcome', asyn
   ).toBeOnTheScreen();
 });
 test('registration has its own route and collects only the required fields', async () => {
-  const user = userEvent.setup();
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
   await render(<App />);
-  await user.press(
-    await screen.findByRole('button', { name: 'Get started' }),
-  );
+  await user.press(await screen.findByRole('button', { name: 'Get started' }));
   expect(await screen.findByLabelText('Password')).toBeOnTheScreen();
   expect(screen.getByLabelText('Email')).toBeOnTheScreen();
   expect(screen.getByLabelText('Phone number')).toBeOnTheScreen();
@@ -55,7 +56,7 @@ test('registration has its own route and collects only the required fields', asy
   expect(screen.getByLabelText('Last name')).toBeOnTheScreen();
 });
 test('the authenticated rider shell connects real Home, Activity and Account', async () => {
-  const user = userEvent.setup();
+  const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
   // Direct component mounting validates structure; no user-facing bypass exists.
   await render(
     <SafeAreaProvider>

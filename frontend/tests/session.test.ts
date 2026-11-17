@@ -53,7 +53,7 @@ test.each(['network', 'server'] as const)(
     expect(h.controller.getSnapshot().stage).toBe('ready');
   },
 );
-test.each(['admin', 'unsupported'])(
+test.each(['unsupported'])(
   'server role %s cannot enter the app',
   async (role) => {
     const h = harness('credential');
@@ -64,6 +64,80 @@ test.each(['admin', 'unsupported'])(
     expect(h.api.rides).not.toHaveBeenCalled();
   },
 );
+test('administrator restoration skips rider recovery and retains the validated session', async () => {
+  const h = harness('credential');
+  h.api.me.mockResolvedValue({ ...rider, role: 'admin' });
+  await h.controller.restore();
+  expect(h.controller.getSnapshot()).toMatchObject({
+    stage: 'ready',
+    user: { role: 'admin' },
+    activeRide: null,
+  });
+  expect(h.saved()).toBe('credential');
+  expect(h.api.rides).not.toHaveBeenCalled();
+});
+test('a role change during admin sign-in cannot enter another private application', async () => {
+  const h = harness();
+  await h.controller.restore();
+  h.api.me
+    .mockResolvedValueOnce({ ...rider, role: 'admin' })
+    .mockResolvedValueOnce({ ...rider, role: 'driver' });
+  await h.controller.signIn(
+    { email: rider.email, password: 'test-password' },
+    'admin',
+  );
+  expect(h.controller.getSnapshot().stage).toBe('rejected');
+  expect(h.saved()).toBeNull();
+  expect(h.api.rides).not.toHaveBeenCalled();
+});
+test.each(['rider', 'driver', 'unsupported'])(
+  'admin form rejects %s before credential persistence',
+  async (role) => {
+    const h = harness();
+    await h.controller.restore();
+    h.api.me.mockResolvedValue({ ...rider, role });
+    await expect(
+      h.controller.signIn(
+        { email: rider.email, password: 'test-password' },
+        'admin',
+      ),
+    ).rejects.toMatchObject({ kind: 'adminRequired' });
+    expect(h.store.set).not.toHaveBeenCalled();
+    expect(h.controller.getSnapshot().stage).toBe('anonymous');
+  },
+);
+test('admin form validates role, restores identity and clears storage on logout', async () => {
+  const h = harness();
+  await h.controller.restore();
+  h.api.me.mockResolvedValue({ ...rider, role: 'admin' });
+  await h.controller.signIn(
+    { email: rider.email, password: 'test-password' },
+    'admin',
+  );
+  expect(h.controller.getSnapshot()).toMatchObject({
+    stage: 'ready',
+    user: { role: 'admin' },
+  });
+  expect(h.api.rides).not.toHaveBeenCalled();
+  await h.controller.logout();
+  expect(h.saved()).toBeNull();
+});
+test('logout during admin identity verification cannot persist the late credential', async () => {
+  const h = harness();
+  await h.controller.restore();
+  const pending = deferred<typeof rider>();
+  h.api.me.mockReturnValue(pending.promise);
+  const signingIn = h.controller.signIn(
+    { email: rider.email, password: 'test-password' },
+    'admin',
+  );
+  await Promise.resolve();
+  await h.controller.logout();
+  pending.resolve({ ...rider, role: 'admin' });
+  await expect(signingIn).rejects.toMatchObject({ kind: 'cancelled' });
+  expect(h.saved()).toBeNull();
+  expect(h.controller.getSnapshot().stage).toBe('anonymous');
+});
 test('secure storage failure is recoverable and does not pretend to be logged out', async () => {
   const h = harness('credential');
   h.store.get.mockRejectedValueOnce(new Error('native private error'));

@@ -111,6 +111,7 @@ export function apiRoutes(features) {
   api.use("/rides", rides);
   const admin = Router();
   admin.use(authenticate, authorize("admin"));
+  admin.get("/overview", c.adminOverview);
   for (const kind of ["users", "drivers", "rides", "payments"])
     admin.get(`/${kind}`, c.list(kind));
   for (const kind of ["drivers", "vehicles"])

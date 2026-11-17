@@ -12,7 +12,7 @@ import {
   type Trip,
 } from './journey-api';
 
-export type Verification = 'pending' | 'approved' | 'rejected';
+export type Verification = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type Availability = 'offline' | 'online' | 'busy';
 export type DriverProfile = {
   verificationStatus: Verification;
@@ -49,7 +49,7 @@ export type RideRequest = {
 export type VehicleInput = Omit<DriverVehicle, 'verificationStatus'>;
 export type TripAction = 'arriving' | 'arrived' | 'start' | 'complete';
 
-const verifications = ['pending', 'approved', 'rejected'];
+const verifications = ['pending', 'approved', 'rejected', 'suspended'];
 const availabilities = ['offline', 'online', 'busy'];
 const id = (value: unknown) => {
   if (typeof value !== 'string' || !/^[a-f0-9]{24}$/i.test(value))

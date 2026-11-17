@@ -1,5 +1,19 @@
 # RideCore Rider
 
+## Administrator access (Stage 1)
+
+On the welcome screen, choose **Admin sign in** and enter an existing active administrator's email and password. The app uses the existing backend login and authoritative account role; rider/driver credentials cannot enter this form's admin session. Administrator sessions restore independently of rider trip recovery.
+
+The administration area contains **Overview**, **Drivers**, **Rides**, **Users** and **Payments**. Review a driver's application to approve/reject/suspend their profile and vehicle separately. Approval never puts the driver online. Users supports disabling/restoring rider and driver accounts subject to existing active-ride restrictions. Rides and simulated payment records are read-only. Global statistics come from the protected `/api/admin/overview`, not the first page of lists. Each list has refresh and pagination. Use **Sign out** to clear the administrator session.
+
+Keep the backend and Expo server running, restart the backend if it is not watching source changes, then reload the web page/development client to load this implementation. An APK with bundled JavaScript needs a new local build; refreshing an old standalone APK cannot install new source code. No deployment is needed for local testing.
+
+Administrator accounts are explicitly provisioned through the existing backend `npm run admin:create` command, using private `ADMIN_EMAIL`, `ADMIN_PHONE`, `ADMIN_PASSWORD` and optional `ADMIN_FIRST_NAME`/`ADMIN_LAST_NAME` environment values. Do not place these values in frontend configuration, Git or screenshots. Existing administrators do not need to be recreated. Public registration cannot create an admin. Do not provision accounts against another database without its owner's authorization.
+
+Run `npm run verify:admin` from `frontend` for seven isolated full-stack checks using the actual frontend API/session adapters, an HTTP backend and a disposable MongoDB replica set. The script does not read `.env`, use real credentials or alter configured user records. Native platform imports are replaced only at the headless harness boundary; it does not test browser rendering or a physical device. The application itself uses the existing native/browser storage implementations.
+
+See [the Stage 1 implementation report](../docs/STAGE_1_ADMIN_IMPLEMENTATION_REPORT.md) for exact test results and manual validation steps.
+
 Android-first React Native + Expo + TypeScript mobile application. iOS shares the
 native architecture. Web is for PC review and a minimal read-only recipient view.
 

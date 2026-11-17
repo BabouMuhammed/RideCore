@@ -7,6 +7,7 @@ import { useSession } from '../features/session/SessionProvider';
 import { PhoneVerificationScreen } from '../features/auth/screens/PhoneVerificationScreen';
 import { JourneyProvider } from '../features/journey/JourneyProvider';
 import { DriverNavigator } from './DriverNavigator';
+import { AdminNavigator } from './AdminNavigator';
 const Stack = createNativeStackNavigator<RootStackParams>();
 const RiderStack = createNativeStackNavigator<RiderStackParams>();
 function AuthenticatedNavigator() {
@@ -30,9 +31,11 @@ export function RootNavigator() {
     return <BootstrapScreen />;
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }}>
-      {state.stage === 'ready' && state.user.role === 'driver' ? (
+      {state.stage === 'ready' && state.user.role === 'admin' ? (
+        <Stack.Screen name="Admin" component={AdminNavigator} />
+      ) : state.stage === 'ready' && state.user.role === 'driver' ? (
         <Stack.Screen name="Driver" component={DriverNavigator} />
-      ) : state.stage === 'ready' ? (
+      ) : state.stage === 'ready' && state.user.role === 'rider' ? (
         <Stack.Screen name="Rider" component={AuthenticatedNavigator} />
       ) : (
         <Stack.Screen name="Auth" component={AuthNavigator} />

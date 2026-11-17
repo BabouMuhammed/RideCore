@@ -77,6 +77,23 @@ Payment repeats with the same method return the same document; another method co
 
 ## Admin
 
+`GET /api/admin/overview` is protected by the same active-admin authentication and authorization as the administrative lists. It returns the normal `{ success: true, data: ... }` envelope with eight nonnegative integer fields:
+
+| Field | Definition |
+| --- | --- |
+| registeredRiders | All User records with role rider, including disabled accounts; excludes admins. |
+| registeredDrivers | All User records with role driver, including disabled accounts. |
+| pendingDriverApprovals | Pending DriverProfile records associated with an existing driver account; this is not pending vehicle approvals. |
+| onlineDrivers | Platform-wide eligible online drivers: active driver account, approved profile and vehicle, valid stored point, and no active assigned ride. No radius or new coordinate-freshness policy is applied. |
+| activeRides | Ride records with active true. |
+| completedRides | Ride records with completed status. |
+| cancelledRides | Ride records with cancelled status. |
+| recordedPayments | All Payment records, including pending/failed/refunded records; a transaction count, not revenue or money transferred. |
+
+Counts use database aggregation/count queries across all records, independent of list pagination. Separate queries are not an atomic cross-collection snapshot. The endpoint adds no model or schema changes. Unauthenticated/inactive/expired identities receive 401 and authenticated non-admin identities receive 403.
+
+The existing RideCore application now includes administrator sign-in, overview, profile/vehicle review, read-only rides/payments and account activation controls. Existing list responses and mutation contracts below are unchanged. Approval keeps drivers offline; both profile and vehicle approval are still required before the driver intentionally goes online.
+
 Every admin endpoint requires an active admin account; role checks run before resource access.
 
 | Method | Path                             | Body / result                                                              |

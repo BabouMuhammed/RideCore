@@ -20,6 +20,7 @@ const statusCopy: Record<Verification | 'missing', { label: string; tone: string
   pending: { label: 'Waiting for approval', tone: colors.onBrand, bg: colors.neutral },
   approved: { label: 'Approved', tone: colors.brand, bg: colors.brandSoft },
   rejected: { label: 'Not approved', tone: colors.error, bg: colors.errorSoft },
+  suspended: { label: 'Suspended', tone: colors.error, bg: colors.errorSoft },
 };
 
 function Status({ value }: { value: Verification | 'missing' }) {

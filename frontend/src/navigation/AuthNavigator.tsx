@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { AuthStackParams } from './types';
 import { WelcomeScreen } from '../features/auth/screens/WelcomeScreen';
+import { AdminSignInScreen } from '../features/auth/screens/AdminSignInScreen';
 import { SignInScreen } from '../features/auth/screens/SignInScreen';
 import { RegisterScreen } from '../features/auth/screens/RegisterScreen';
 import { ServerSettingsScreen } from '../features/auth/screens/ServerSettingsScreen';
@@ -10,6 +11,7 @@ export function AuthNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }}>
       <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      <Stack.Screen name="AdminSignIn" component={AdminSignInScreen} />
       <Stack.Screen name="SignIn" component={SignInScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       {serverSettingAllowed && (

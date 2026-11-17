@@ -12,7 +12,7 @@ export function BootstrapScreen() {
         <BrandMark />
         <StateMessage
           kind="error"
-          title="Rider or driver account required"
+          title="Account access unavailable"
           description={state.error.message}
           action={{
             label: 'Return to sign in',

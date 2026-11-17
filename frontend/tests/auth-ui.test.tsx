@@ -54,9 +54,7 @@ test('registration submits exact fields and confirms creation without authentica
   const h = harness();
   const user = interactions();
   await render(testApp(h));
-  await user.press(
-    await screen.findByRole('button', { name: 'Get started' }),
-  );
+  await user.press(await screen.findByRole('button', { name: 'Get started' }));
   for (const [label, value] of [
     ['First name', ' Test '],
     ['Last name', ' Rider '],
@@ -88,9 +86,7 @@ test('invalid registration stays in the form and never calls the backend', async
   const h = harness();
   const user = interactions();
   await render(testApp(h));
-  await user.press(
-    await screen.findByRole('button', { name: 'Get started' }),
-  );
+  await user.press(await screen.findByRole('button', { name: 'Get started' }));
   await user.press(screen.getByRole('button', { name: 'Create account' }));
   expect(
     await screen.findByText('Enter a name between 1 and 120 characters.'),
@@ -173,12 +169,12 @@ test('restored active ride enters the real requested state without driver lifecy
   expect(await screen.findByText('Finding your driver')).toBeOnTheScreen();
   expect(h.controller.getSnapshot()).toMatchObject({ activeRide });
 });
-test('an admin account gets a clear role rejection instead of rider tabs', async () => {
+test('an unsupported account gets a clear role rejection instead of private tabs', async () => {
   const h = harness('credential');
-  h.api.me.mockResolvedValue({ ...rider, role: 'admin' });
+  h.api.me.mockResolvedValue({ ...rider, role: 'unsupported' });
   await render(testApp(h));
   expect(
-    await screen.findByText('Rider or driver account required'),
+    await screen.findByText('Account access unavailable'),
   ).toBeOnTheScreen();
   expect(screen.queryByText('Where to?')).not.toBeOnTheScreen();
 });

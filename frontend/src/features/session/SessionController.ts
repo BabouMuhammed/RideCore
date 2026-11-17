@@ -58,9 +58,8 @@ export class SessionController {
     this.token = null;
     this.state = { stage: 'starting' };
   }
-  // Riders and drivers use this app; administrators do not.
   private allowed(user: User) {
-    if (!['rider', 'driver'].includes(user.role) || !user.isActive)
+    if (!['rider', 'driver', 'admin'].includes(user.role) || !user.isActive)
       throw new AppError('role');
   }
   async restore() {
@@ -85,10 +84,18 @@ export class SessionController {
         });
     }
   }
-  async signIn(input: Credentials) {
+  async signIn(input: Credentials, audience?: 'admin') {
     const epoch = this.begin();
     const result = await this.api.login(input, this.abort.signal);
     if (!this.current(epoch)) throw new AppError('cancelled');
+    // The dedicated admin form must reject other identities before storage.
+    // Normal rider/driver login retains its existing bootstrap sequence.
+    if (audience === 'admin') {
+      const identity = await this.api.me(result.token, this.abort.signal);
+      if (!this.current(epoch)) throw new AppError('cancelled');
+      if (identity.role !== 'admin' || !identity.isActive)
+        throw new AppError('adminRequired');
+    }
     try {
       await this.storage(() => this.store.set(result.token));
     } catch {
@@ -100,16 +107,18 @@ export class SessionController {
     if (!this.current(epoch)) throw new AppError('cancelled');
     this.token = result.token;
     this.emit({ stage: 'restoring' });
-    await this.restoreToken(epoch, result.token);
+    await this.restoreToken(epoch, result.token, audience);
   }
-  private async restoreToken(epoch: number, token: string) {
+  private async restoreToken(epoch: number, token: string, audience?: 'admin') {
     let step: 'session' | 'rides' = 'session';
     try {
       const user = await this.api.me(token, this.abort.signal);
       if (!this.current(epoch)) return;
       this.allowed(user);
-      if (user.role === 'driver') {
-        // Driver mode loads its own profile and active ride once mounted.
+      if (audience === 'admin' && user.role !== 'admin')
+        throw new AppError('role');
+      if (user.role === 'driver' || user.role === 'admin') {
+        // Only riders bootstrap journey recovery. Other roles load their own UI.
         if (this.current(epoch))
           this.emit({ stage: 'ready', user, activeRide: null });
         return;

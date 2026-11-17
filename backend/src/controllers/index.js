@@ -10,6 +10,8 @@ import { DriverProfile, Vehicle, Ride, Payment } from "../models/index.js";
 import { requireThat } from "../utils/errors.js";
 const send = (res, data, status = 200) =>
   res.status(status).json({ success: true, data });
+export const adminOverview = async (req, res) =>
+  send(res, await admin.overview());
 export const register = async (req, res) =>
   send(res, await auth.register(req.input), 201);
 export const login = async (req, res) =>

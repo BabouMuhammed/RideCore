@@ -17,7 +17,8 @@
     "format:check": "prettier --check .",
     "verify:backend-contract": "node scripts/verify-phase2-contract.mjs",
     "export:web": "expo export --platform web",
-    "verify:rider": "node scripts/verify-rider-journey.mjs"
+    "verify:rider": "node scripts/verify-rider-journey.mjs",
+    "verify:admin": "node scripts/verify-admin.mjs"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "5.2.14",

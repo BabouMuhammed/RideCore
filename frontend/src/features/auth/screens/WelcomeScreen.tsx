@@ -92,6 +92,10 @@ export function WelcomeScreen({
             </Pressable>
           </View>
           <View style={styles.extras}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Admin sign in"
+              onPress={() => navigation.navigate('AdminSignIn')} style={styles.link}>
+              <Text variant="caption" tone="secondary">Admin sign in</Text>
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Try demo"
@@ -159,6 +163,6 @@ const styles = StyleSheet.create({
   },
   link: { minHeight: 44, justifyContent: 'center', paddingHorizontal: space.xs },
   linkText: { fontFamily: fonts.semibold, color: colors.text },
-  extras: { flexDirection: 'row', justifyContent: 'center', gap: space.lg },
+  extras: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.lg },
   underline: { textDecorationLine: 'underline' },
 });
