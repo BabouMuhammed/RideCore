@@ -30,6 +30,9 @@ export type Trip = Ride & {
   finalFare?: number;
   currency: 'GMD' | 'GBP';
   requestedAt: string;
+  /** When an unanswered request closes as "no_driver_found". */
+  requestExpiresAt?: string;
+  cancellationReason?: string;
   driverDetails?: {
     firstName: string;
     rating: number | null;
@@ -137,6 +140,13 @@ export function trip(value: unknown): Trip {
     ...(v.finalFare !== undefined ? { finalFare: number(v.finalFare) } : {}),
     currency: currency as Trip['currency'],
     requestedAt: text(v.requestedAt),
+    ...(typeof v.requestExpiresAt === 'string' &&
+    Number.isFinite(Date.parse(v.requestExpiresAt))
+      ? { requestExpiresAt: v.requestExpiresAt }
+      : {}),
+    ...(typeof v.cancellationReason === 'string'
+      ? { cancellationReason: v.cancellationReason }
+      : {}),
   } as Trip;
 }
 export function publicSnapshot(value: unknown): PublicSnapshot {
@@ -173,10 +183,7 @@ export type NearbyDriver = {
   point: Coordinate;
   category: Category;
 };
-export function createJourneyApi(
-  baseUrl = apiUrl(),
-  fetcher?: ApiFetch,
-) {
+export function createJourneyApi(baseUrl = apiUrl(), fetcher?: ApiFetch) {
   const call = createTransport(baseUrl, fetcher);
   const idPath = (id: string) => {
     if (!/^[a-f0-9]{24}$/i.test(id)) throw new AppError('contract');

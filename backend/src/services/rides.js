@@ -6,14 +6,52 @@ import { Ride, DriverProfile, User } from "../models/index.js";
 import { requireThat } from "../utils/errors.js";
 import { estimateFare } from "./pricing.js";
 import { eligibleDriver } from "./drivers.js";
-import { nearbyRideRequests, pickupWithinRadius } from "./nearby.js";
+import {
+  defaultTimeoutSeconds,
+  nearbyRideRequests,
+  openRequestFilter,
+  pickupWithinRadius,
+} from "./nearby.js";
 export const transitions = Object.freeze({
   arriving: ["accepted", "driver_arriving", "arrivingAt"],
   arrived: ["driver_arriving", "driver_arrived", "arrivedAt"],
   start: ["driver_arrived", "in_progress", "startedAt"],
   complete: ["in_progress", "completed", "completedAt"],
 });
-export async function createRide(user, input) {
+export const noDriverFound = "no_driver_found";
+// Close requests nobody accepted in time and tell the rider over realtime.
+export async function expireStaleRequests(now = new Date()) {
+  const stale = await Ride.find({
+    status: "requested",
+    active: true,
+    $nor: [openRequestFilter(now)],
+  })
+    .select("_id")
+    .limit(200);
+  let expired = 0;
+  for (const { _id } of stale) {
+    const ride = await Ride.findOneAndUpdate(
+      { _id, status: "requested", active: true },
+      {
+        status: "cancelled",
+        active: false,
+        cancelledAt: now,
+        cancellationReason: noDriverFound,
+      },
+      { returnDocument: "after" },
+    );
+    if (ride) {
+      expired++;
+      publishRideChange(ride);
+    }
+  }
+  return expired;
+}
+export async function createRide(
+  user,
+  input,
+  timeoutSeconds = defaultTimeoutSeconds,
+) {
   const estimate = estimateFare(input);
   return mongoose.connection.transaction(async (session) => {
     const active = await User.findOneAndUpdate(
@@ -31,6 +69,7 @@ export async function createRide(user, input) {
           estimatedDuration: estimate.estimatedDuration,
           estimatedFare: estimate.estimatedFare,
           currency: estimate.currency,
+          requestExpiresAt: new Date(Date.now() + timeoutSeconds * 1000),
         },
       ],
       { session },
@@ -82,6 +121,7 @@ export async function acceptRide(id, user, radiusKm) {
       {
         _id: id,
         status: "requested",
+        ...openRequestFilter(),
         vehicleType: vehicle.vehicleType,
         rider: { $ne: user._id },
         "pickup.location": pickupWithinRadius(

@@ -27,21 +27,29 @@ import {
   type Estimate,
   type Stop,
   type ShareGrant,
+  type Trip,
 } from '../../../services/journey-api';
 import { useJourney } from '../../journey/JourneyProvider';
 import { isActive } from '../../journey/JourneyController';
-import { money, statusLabels } from '../../journey/presentation';
+import { headline, money, noDriverFound } from '../../journey/presentation';
 import { Cancellation } from '../../journey/Cancellation';
 import { TripProgress } from '../../journey/TripProgress';
 import { PlateBadge } from '../../journey/PlateBadge';
 import { TripAddresses, splitAddress } from '../../journey/parts/TripAddresses';
 import { SummaryRow } from '../../journey/parts/SummaryRow';
 import { VehicleOption } from '../../journey/parts/VehicleOption';
-import { FindingDots } from '../../journey/parts/FindingDots';
+import { SearchingPanel } from '../../journey/parts/SearchingPanel';
 import { SharePanel } from '../../sharing/SharePanel';
 import { Receipt } from '../../receipt/Receipt';
 import { safeError } from '../../../services/errors';
-import { colors, elevation, fonts, radius, size, space } from '../../../theme/tokens';
+import {
+  colors,
+  elevation,
+  fonts,
+  radius,
+  size,
+  space,
+} from '../../../theme/tokens';
 
 export function BookingHome({
   service,
@@ -162,9 +170,9 @@ export function BookingHome({
   ]);
   const route = routeResult.key === routeKey ? routeResult.points : [];
   const routeDistance =
-    routeResult.key === routeKey ? routeResult.distance ?? null : null;
+    routeResult.key === routeKey ? (routeResult.distance ?? null) : null;
   const routeDuration =
-    routeResult.key === routeKey ? routeResult.duration ?? null : null;
+    routeResult.key === routeKey ? (routeResult.duration ?? null) : null;
   const recentStops = useMemo(() => {
     const seen = new Set<string>();
     return state.history
@@ -198,11 +206,12 @@ export function BookingHome({
       Coordinate | null,
     ];
     if (start && end)
-      void ('routeInfo' in maps && maps.routeInfo
-        ? maps.routeInfo(start, end, abort.signal)
-        : maps
-            .route(start, end, abort.signal)
-            .then((points) => ({ points, distance: null, duration: null }))
+      void (
+        'routeInfo' in maps && maps.routeInfo
+          ? maps.routeInfo(start, end, abort.signal)
+          : maps
+              .route(start, end, abort.signal)
+              .then((points) => ({ points, distance: null, duration: null }))
       )
         .then((info) => {
           if (!abort.signal.aborted) setRouteResult({ key: routeKey, ...info });
@@ -311,6 +320,23 @@ export function BookingHome({
       operation.current = false;
     }
   }
+  // Re-send the same trip after a search closed without a driver.
+  async function requestAgain(previous: Trip) {
+    if (operation.current) return;
+    operation.current = true;
+    setError(undefined);
+    try {
+      await controller.request({
+        pickup: previous.pickup,
+        destination: previous.destination,
+        vehicleType: previous.vehicleType,
+      });
+    } catch (error) {
+      if (mounted.current) setError(safeError(error).message);
+    } finally {
+      operation.current = false;
+    }
+  }
   function choose(kind: 'pickup' | 'destination') {
     setPin(null);
     setSelecting(kind);
@@ -329,7 +355,9 @@ export function BookingHome({
     return (
       <RiderHome
         history={state.history}
-        center={here ?? state.history[0]?.pickup.location.coordinates ?? initialCenter}
+        center={
+          here ?? state.history[0]?.pickup.location.coordinates ?? initialCenter
+        }
         located={!!here}
         cars={cars}
         onPlan={(service, recentDestination, search) => {
@@ -451,27 +479,36 @@ export function BookingHome({
           />
         ) : trip ? (
           <>
-            <Text variant="title" accessibilityLiveRegion="polite" accessibilityRole="header">
-              {statusLabels[trip.status]}
+            <Text
+              variant="title"
+              accessibilityLiveRegion="polite"
+              accessibilityRole="header"
+            >
+              {headline(trip)}
             </Text>
             {trip.status === 'requested' ? (
               <>
                 <View style={styles.rule} />
-                <Text>We’re looking for an available driver nearby.</Text>
-                <FindingDots />
-                {state.nearbyDrivers === 0 && (
-                  <>
-                    <Text variant="caption" tone="secondary">
-                      No available drivers for this ride type were found nearby
-                      at the last check. Your request stays open.
-                    </Text>
-                    <Button
-                      label="Check for drivers"
-                      variant="secondary"
-                      onPress={() => void controller.refresh()}
-                    />
-                  </>
-                )}
+                <SearchingPanel
+                  requestedAt={trip.requestedAt}
+                  expiresAt={trip.requestExpiresAt}
+                  nearbyDrivers={state.nearbyDrivers}
+                  checking={state.busy}
+                  onCheck={() => void controller.refresh()}
+                />
+              </>
+            ) : trip.status === 'cancelled' &&
+              trip.cancellationReason === noDriverFound ? (
+              <>
+                <Text>
+                  No driver accepted your request in time. You haven’t been
+                  charged.
+                </Text>
+                <Button
+                  label="Try again"
+                  disabled={state.busy}
+                  onPress={() => void requestAgain(trip)}
+                />
               </>
             ) : (
               <TripProgress status={trip.status} />
@@ -509,7 +546,9 @@ export function BookingHome({
                   </View>
                   <View style={{ flex: 1, gap: 2 }}>
                     {trip.driverDetails && (
-                      <Text variant="label">{trip.driverDetails.firstName}</Text>
+                      <Text variant="label">
+                        {trip.driverDetails.firstName}
+                      </Text>
                     )}
                     {trip.driverDetails &&
                       // The backend reports 0 until a driver's first rating;
@@ -533,16 +572,24 @@ export function BookingHome({
                       </Text>
                     )}
                   </View>
-                  {trip.vehicle && <PlateBadge plate={trip.vehicle.plateNumber} />}
+                  {trip.vehicle && (
+                    <PlateBadge plate={trip.vehicle.plateNumber} />
+                  )}
                 </View>
-                {trip.vehicle && isActive(trip) && trip.status !== 'in_progress' && (
-                  <View style={styles.plateTip}>
-                    <Icon name="shield" size={16} color={colors.brand} />
-                    <Text variant="caption" tone="secondary" style={{ flex: 1 }}>
-                      Check the plate matches before you get in.
-                    </Text>
-                  </View>
-                )}
+                {trip.vehicle &&
+                  isActive(trip) &&
+                  trip.status !== 'in_progress' && (
+                    <View style={styles.plateTip}>
+                      <Icon name="shield" size={16} color={colors.brand} />
+                      <Text
+                        variant="caption"
+                        tone="secondary"
+                        style={{ flex: 1 }}
+                      >
+                        Check the plate matches before you get in.
+                      </Text>
+                    </View>
+                  )}
               </View>
             )}
             {trip.status === 'driver_arrived' && (
@@ -556,7 +603,10 @@ export function BookingHome({
                 accessibilityRole="button"
                 accessibilityLabel="Share my ride"
                 onPress={() => setContext('share')}
-                style={({ pressed }) => [styles.shareRow, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [
+                  styles.shareRow,
+                  pressed && { opacity: 0.7 },
+                ]}
               >
                 <View style={styles.tile}>
                   <Icon name="share" size={20} />
@@ -571,10 +621,15 @@ export function BookingHome({
               </Pressable>
             )}
             <View style={styles.rule} />
-            <TripAddresses pickup={trip.pickup} destination={trip.destination} />
+            <TripAddresses
+              pickup={trip.pickup}
+              destination={trip.destination}
+            />
             <SummaryRow
               icon="banknote"
-              label={trip.status === 'completed' ? 'Final fare' : 'Estimated fare'}
+              label={
+                trip.status === 'completed' ? 'Final fare' : 'Estimated fare'
+              }
               value={money(trip.finalFare ?? trip.estimatedFare, trip.currency)}
               divider={false}
             />
@@ -723,7 +778,11 @@ export function BookingHome({
         ) : (
           <>
             <View style={styles.titleRow}>
-              <Text variant="title" accessibilityRole="header" style={{ flex: 1 }}>
+              <Text
+                variant="title"
+                accessibilityRole="header"
+                style={{ flex: 1 }}
+              >
                 {pickup && destination ? 'Your trip' : 'Where to?'}
               </Text>
               {pickup && destination && (
@@ -745,37 +804,41 @@ export function BookingHome({
               onPickup={working ? undefined : () => choose('pickup')}
               onDestination={working ? undefined : () => choose('destination')}
             />
-            {pickup && destination && (routeDistance != null || routeDuration != null) && (
-              <>
-                <View style={styles.rule} />
-                <View style={styles.estimates}>
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text variant="small" tone="secondary">
-                      Estimated distance
-                    </Text>
-                    <Text variant="label">
-                      {routeDistance != null
-                        ? `${(routeDistance / 1000).toFixed(1)} km`
-                        : 'Not available'}
-                    </Text>
+            {pickup &&
+              destination &&
+              (routeDistance != null || routeDuration != null) && (
+                <>
+                  <View style={styles.rule} />
+                  <View style={styles.estimates}>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text variant="small" tone="secondary">
+                        Estimated distance
+                      </Text>
+                      <Text variant="label">
+                        {routeDistance != null
+                          ? `${(routeDistance / 1000).toFixed(1)} km`
+                          : 'Not available'}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text variant="small" tone="secondary">
+                        Estimated duration
+                      </Text>
+                      <Text variant="label">
+                        {routeDuration != null
+                          ? `${Math.max(1, Math.round(routeDuration / 60))} min`
+                          : 'Not available'}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text variant="small" tone="secondary">
-                      Estimated duration
-                    </Text>
-                    <Text variant="label">
-                      {routeDuration != null
-                        ? `${Math.max(1, Math.round(routeDuration / 60))} min`
-                        : 'Not available'}
-                    </Text>
-                  </View>
-                </View>
-              </>
-            )}
+                </>
+              )}
             <Button
               label="Choose a ride"
               loading={working}
-              disabled={!pickup || !destination || state.loading || !!state.error}
+              disabled={
+                !pickup || !destination || state.loading || !!state.error
+              }
               onPress={() => void estimate()}
             />
           </>
@@ -804,9 +867,20 @@ export function BookingHome({
     </View>
   );
 }
-const categoryCopy: Record<Category, { title: string; description: string; seats: string }> = {
-  economy: { title: 'Economy', description: 'Affordable everyday rides', seats: 'Up to 4 seats' },
-  comfort: { title: 'Comfort', description: 'More space and comfort', seats: 'Up to 4 seats' },
+const categoryCopy: Record<
+  Category,
+  { title: string; description: string; seats: string }
+> = {
+  economy: {
+    title: 'Economy',
+    description: 'Affordable everyday rides',
+    seats: 'Up to 4 seats',
+  },
+  comfort: {
+    title: 'Comfort',
+    description: 'More space and comfort',
+    seats: 'Up to 4 seats',
+  },
   xl: { title: 'XL', description: 'For larger groups', seats: 'Up to 6 seats' },
 };
 const styles = StyleSheet.create({
@@ -822,7 +896,13 @@ const styles = StyleSheet.create({
     ...elevation.floating,
   },
   // The back button is already a white bordered square.
-  brandBare: { paddingVertical: 0, paddingHorizontal: 0, backgroundColor: 'transparent', shadowOpacity: 0, elevation: 0 },
+  brandBare: {
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
   // The stem's tip sits exactly on the centre of the visible map.
   centerPin: {
@@ -847,7 +927,13 @@ const styles = StyleSheet.create({
   edit: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
   estimates: { flexDirection: 'row', gap: space.xl },
   payment: { flexDirection: 'row', alignItems: 'center', minHeight: 44 },
-  ring: { width: 12, height: 12, borderRadius: 6, borderWidth: 3, borderColor: colors.text },
+  ring: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 3,
+    borderColor: colors.text,
+  },
   driverCard: {
     gap: space.md,
     padding: space.lg,
@@ -865,10 +951,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontFamily: fonts.semibold, fontSize: 18, lineHeight: 24, color: colors.text },
+  avatarText: {
+    fontFamily: fonts.semibold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: colors.text,
+  },
   rating: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   plateTip: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  shareRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 56 },
+  shareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    minHeight: 56,
+  },
   tile: {
     width: size.tile,
     height: size.tile,

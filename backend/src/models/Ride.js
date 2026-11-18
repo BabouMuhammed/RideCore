@@ -43,6 +43,7 @@ const rideSchema = new Schema(
     },
     active: { type: Boolean, default: true },
     requestedAt: { type: Date, default: Date.now },
+    requestExpiresAt: Date,
     acceptedAt: Date,
     arrivingAt: Date,
     arrivedAt: Date,

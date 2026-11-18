@@ -91,6 +91,20 @@ export async function nearbyDrivers(coordinates, radiusKm) {
     },
   ]);
 }
+export const defaultTimeoutSeconds = 180;
+// Requests created before expiry existed have no requestExpiresAt; treat them
+// as expiring a default interval after they were requested.
+export function openRequestFilter(now = new Date()) {
+  return {
+    $or: [
+      { requestExpiresAt: { $gt: now } },
+      {
+        requestExpiresAt: { $exists: false },
+        requestedAt: { $gt: new Date(now - defaultTimeoutSeconds * 1000) },
+      },
+    ],
+  };
+}
 export async function nearbyRideRequests(profile, vehicle, radiusKm) {
   requireThat(profile.currentLocation, 409, "Set a location before discovery");
   requireThat(
@@ -102,13 +116,14 @@ export async function nearbyRideRequests(profile, vehicle, radiusKm) {
   return Ride.find({
     status: "requested",
     active: true,
+    ...openRequestFilter(),
     vehicleType: vehicle.vehicleType,
     "pickup.location": {
       $near: { $geometry: origin, $maxDistance: searchRadius(radiusKm) * 1000 },
     },
   })
     .select(
-      "pickup destination distance estimatedDuration estimatedFare currency vehicleType requestedAt",
+      "pickup destination distance estimatedDuration estimatedFare currency vehicleType requestedAt requestExpiresAt",
     )
     .limit(50);
 }

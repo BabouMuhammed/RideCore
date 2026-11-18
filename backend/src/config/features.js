@@ -26,6 +26,14 @@ export const featureEnvironmentSchema = z.object({
     .min(1)
     .max(300)
     .default(60),
+  // A request no driver accepts within this time is closed as
+  // "no_driver_found", so riders are never left waiting indefinitely.
+  RIDE_REQUEST_TIMEOUT_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(30)
+    .max(3600)
+    .default(180),
   OTP_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(5),
   // No SMS provider is connected yet. "true" returns the code in the API
   // response even in production, for demonstration deployments only.

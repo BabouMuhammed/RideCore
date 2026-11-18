@@ -8,6 +8,14 @@ export const statusLabels: Record<Trip['status'], string> = {
   completed: 'You’ve arrived',
   cancelled: 'Ride cancelled',
 };
+export const noDriverFound = 'no_driver_found';
+export const requestTimeoutSeconds = 180;
+export function headline(trip: Pick<Trip, 'status' | 'cancellationReason'>) {
+  return trip.status === 'cancelled' &&
+    trip.cancellationReason === noDriverFound
+    ? 'No driver found'
+    : statusLabels[trip.status];
+}
 export function money(amount: number, currency = 'GMD') {
   return `${currency} ${amount.toFixed(2)}`;
 }

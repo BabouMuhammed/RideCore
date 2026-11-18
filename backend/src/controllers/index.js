@@ -35,7 +35,15 @@ export const availability = async (req, res) =>
   );
 export const estimate = (req, res) => send(res, estimateFare(req.input));
 export const createRide = async (req, res) =>
-  send(res, await rides.createRide(req.user, req.input), 201);
+  send(
+    res,
+    await rides.createRide(
+      req.user,
+      req.input,
+      req.app.locals.features.RIDE_REQUEST_TIMEOUT_SECONDS,
+    ),
+    201,
+  );
 export const myRides = async (req, res) =>
   send(
     res,

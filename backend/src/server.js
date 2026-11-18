@@ -5,6 +5,7 @@ import { connectDatabase } from "./config/db.js";
 import { readFeatureSettings } from "./config/features.js";
 import { readEnvironment } from "./config/env.js";
 import { models } from "./models/index.js";
+import { expireStaleRequests } from "./services/rides.js";
 let server, io;
 async function shutdown(code = 0) {
   const deadline = setTimeout(() => process.exit(1), 10000).unref();
@@ -26,6 +27,13 @@ try {
     runtimeMode: env.NODE_ENV,
     trustProxy: env.TRUST_PROXY,
   }));
+  // Close ride requests that no driver accepted in time.
+  const sweep = setInterval(() => {
+    expireStaleRequests().catch(() => {
+      console.error("Ride request expiry sweep failed");
+    });
+  }, 15000);
+  sweep.unref();
   server.listen(env.PORT);
   server.once("listening", () => {
     console.log(`RIDE CORE API running on port ${env.PORT}`);

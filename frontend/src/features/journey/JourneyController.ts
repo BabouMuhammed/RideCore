@@ -36,6 +36,25 @@ export class JourneyController {
   private cleanup?: () => void;
   private refreshing?: Promise<void>;
   private checkingNearby = false;
+  private searchTimer?: ReturnType<typeof setInterval>;
+  // While a request is open, recheck nearby drivers and the ride itself so
+  // the rider sees live progress even if a realtime event is missed.
+  private watchSearch(trip: Trip | null) {
+    const searching = trip?.status === 'requested';
+    if (searching && !this.searchTimer) {
+      this.searchTimer = setInterval(() => {
+        const current = this.state.trip;
+        if (current?.status !== 'requested') return;
+        void this.checkDrivers(current);
+        void this.refresh();
+      }, 15000);
+      // Node (tests, server rendering) shouldn't stay alive for this timer.
+      (this.searchTimer as { unref?: () => void }).unref?.();
+    } else if (!searching && this.searchTimer) {
+      clearInterval(this.searchTimer);
+      this.searchTimer = undefined;
+    }
+  }
   constructor(
     readonly api: JourneyApi,
     readonly run: Runner,
@@ -61,6 +80,7 @@ export class JourneyController {
     this.stopped = true;
     this.revision++;
     this.cleanup?.();
+    this.watchSearch(null);
     this.state = {
       ...this.state,
       trip: null,
@@ -114,6 +134,7 @@ export class JourneyController {
         changed || !trip || !isActive(trip) ? null : this.state.location,
     });
     if (trip?.status === 'requested') void this.checkDrivers(trip);
+    this.watchSearch(trip);
     if (
       trip?.trackingLocation &&
       isActive(trip) &&
