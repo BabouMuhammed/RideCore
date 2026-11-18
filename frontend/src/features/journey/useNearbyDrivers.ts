@@ -52,7 +52,7 @@ export function useNearbyDrivers(
         });
     };
     load();
-    const timer = setInterval(load, 15000);
+    const timer = setInterval(load, 10000);
     return () => {
       alive = false;
       clearInterval(timer);

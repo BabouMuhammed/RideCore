@@ -55,7 +55,7 @@ export function DriverProvider({
         !isActiveRide(state.ride)
       )
         void controller.pollRequests();
-    }, 5000);
+    }, 3000);
     const sub = AppState.addEventListener('change', (next) => {
       if (next === 'active') void controller.refresh();
     });

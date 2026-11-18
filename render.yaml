@@ -18,6 +18,10 @@ services:
         value: "22"
       - key: TRUST_PROXY
         value: "1"
+      # How far riders see drivers and drivers see requests. Wide while
+      # there are few drivers, so demo requests always find someone.
+      - key: DRIVER_SEARCH_RADIUS_KM
+        value: "15"
       # No SMS provider is connected; show verification codes in the app.
       - key: OTP_MOCK_DELIVERY
         value: "true"
