@@ -11,13 +11,20 @@ const config: ExpoConfig = {
   scheme: 'ridecore',
   userInterfaceStyle: 'light',
   icon: './assets/icon.png',
+  web: {
+    favicon: './assets/favicon.png',
+    name: 'RideCore',
+    shortName: 'RideCore',
+    themeColor: '#FAF9F6',
+    backgroundColor: '#FAF9F6',
+  },
   ios: { supportsTablet: true, bundleIdentifier: 'com.ridecore.rider' },
   android: {
     package: 'com.ridecore.rider',
     softwareKeyboardLayoutMode: 'resize',
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#FAF9F6',
+      backgroundColor: '#191919',
     },
     // Native libraries must not implicitly request unsupported MVP capabilities.
     blockedPermissions: [

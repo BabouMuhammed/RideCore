@@ -9,13 +9,22 @@ import { StatusBar } from 'expo-status-bar';
 import { navigationTheme } from '../navigation/theme';
 import { AppErrorBoundary } from './AppErrorBoundary';
 import { DemoProvider } from '../demo/DemoProvider';
+// Browser tab title on web. Screens without a title used to show "undefined".
+function documentTitle(options?: { title?: string }) {
+  return typeof options?.title === 'string' && options.title
+    ? `${options.title} · RideCore`
+    : 'RideCore';
+}
 export function AppProviders({ children }: PropsWithChildren) {
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <AppErrorBoundary>
           <DemoProvider>
-            <NavigationContainer theme={navigationTheme}>
+            <NavigationContainer
+              theme={navigationTheme}
+              documentTitle={{ formatter: documentTitle }}
+            >
               <BottomSheetModalProvider>
                 <StatusBar style="dark" />
                 <SessionProvider>{children}</SessionProvider>
