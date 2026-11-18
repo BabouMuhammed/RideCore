@@ -6,6 +6,7 @@ import { AppProviders } from './src/application/AppProviders';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { colors } from './src/theme/tokens';
 import { PublicEntry } from './src/application/PublicEntry';
+import { startAppUpdates } from './src/application/appUpdates';
 import {
   loadServerOverride,
   onServerChange,
@@ -31,6 +32,8 @@ export default function App() {
   const [serverReady, setServerReady] = useState(false);
   // Changing the server remounts every provider so nothing keeps the old one.
   const [generation, setGeneration] = useState(0);
+  // Phone and PC always run the same deployed version.
+  useEffect(() => startAppUpdates(), []);
   useEffect(() => {
     void loadServerOverride().finally(() => setServerReady(true));
     return onServerChange(() => setGeneration((value) => value + 1));

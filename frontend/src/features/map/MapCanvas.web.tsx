@@ -37,7 +37,7 @@ export function MapCanvas(props: MapCanvasProps) {
     moved.current = onCenterChange;
   }, [onSelect, onCenterChange]);
   const [ready, setReady] = useState(false),
-    [failed, setFailed] = useState(false);
+    [failed, setFailed] = useState<string | false>(false);
   const initial = useRef(center);
   useEffect(() => {
     if (!host.current) return;
@@ -77,10 +77,11 @@ export function MapCanvas(props: MapCanvasProps) {
         // failure before the first load means the map is unusable.
         instance.on('error', (event) => {
           const tileError = 'tile' in event || 'sourceId' in event;
-          if (!tileError && !instance?.loaded()) setFailed(true);
+          if (!tileError && !instance?.loaded())
+            setFailed(event.error?.message || 'Unknown map error');
         });
-      } catch {
-        setFailed(true);
+      } catch (error) {
+        setFailed(error instanceof Error ? error.message : 'Map not supported');
       }
     });
     return () => {
@@ -184,6 +185,10 @@ export function MapCanvas(props: MapCanvasProps) {
       {failed && (
         <View pointerEvents="none" style={{ padding: 24, paddingTop: 80 }}>
           <Text>The map could not load. Check your connection.</Text>
+          {/* The technical reason, for support and bug reports. */}
+          <Text variant="caption" tone="secondary">
+            Details: {failed}
+          </Text>
         </View>
       )}
     </View>
