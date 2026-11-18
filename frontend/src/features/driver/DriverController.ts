@@ -19,7 +19,7 @@ type Connect = (
   handlers: { changed(): void; connection(connected: boolean): void },
 ) => DriverLink;
 
-export type LocationSource = 'gps' | 'map';
+export type LocationSource = 'gps' | 'map' | 'demo';
 export type DriverState = {
   loading: boolean;
   account: DriverAccount | null;
@@ -120,7 +120,8 @@ export class DriverController {
         (activeStatuses as readonly string[]).includes(ride.status),
       );
       let ride: Trip | null = null;
-      if (active) ride = await this.run((t, s) => this.api.ride(t, active._id, s));
+      if (active)
+        ride = await this.run((t, s) => this.api.ride(t, active._id, s));
       else if (this.state.ride && !isActiveRide(this.state.ride)) {
         // Keep a just-finished ride on screen until the driver closes it.
         ride = this.state.ride;
@@ -135,7 +136,19 @@ export class DriverController {
         online && !isActiveRide(ride)
           ? await this.run((t, s) => this.api.requests(t, s)).catch(() => [])
           : [];
-      this.set({ loading: false, account, ride, requests, error: undefined });
+      // After a reload, start from the position the server last stored so
+      // the driver isn't asked to set it again.
+      const stored = account.profile?.location ?? null;
+      this.set({
+        loading: false,
+        account,
+        ride,
+        requests,
+        error: undefined,
+        ...(!this.state.location && stored
+          ? { location: stored, locationSource: 'map' as const }
+          : {}),
+      });
       this.syncLink();
     } catch (error) {
       const failure = safeError(error);
@@ -205,7 +218,9 @@ export class DriverController {
       await this.run((t, s) => this.api.setAvailability(t, 'online', s));
     });
   goOffline = () =>
-    this.act(() => this.run((t, s) => this.api.setAvailability(t, 'offline', s)));
+    this.act(() =>
+      this.run((t, s) => this.api.setAvailability(t, 'offline', s)),
+    );
   accept = (rideId: string) =>
     this.act(async () => {
       try {
@@ -228,15 +243,14 @@ export class DriverController {
   cancel = (reason: string) =>
     this.act(async () => {
       const ride = this.state.ride;
-      if (ride) await this.run((t, s) => this.api.cancel(t, ride._id, reason, s));
+      if (ride)
+        await this.run((t, s) => this.api.cancel(t, ride._id, reason, s));
     });
   rate = (rating: number, comment: string) =>
     this.act(async () => {
       const ride = this.state.ride;
       if (!ride) return;
-      await this.run((t, s) =>
-        this.api.rate(t, ride._id, rating, comment, s),
-      );
+      await this.run((t, s) => this.api.rate(t, ride._id, rating, comment, s));
       this.set({ ride: null });
     });
   closeFinishedRide = () => {
@@ -251,8 +265,15 @@ export class DriverController {
 
   /** A new position from GPS, or a point the driver picked on the map. */
   updateLocation = (point: Coordinate, source: LocationSource) => {
+    // During a demo drive the simulated car, not the phone's GPS, is the
+    // position everyone sees.
+    if (this.demoDriving && source === 'gps') return;
     this.set({ location: point, locationSource: source });
-    this.publish(point, source === 'map');
+    this.publish(point, source !== 'gps');
+  };
+  private demoDriving = false;
+  setDemoDriving = (on: boolean) => {
+    this.demoDriving = on;
   };
   private publish(point: Coordinate, immediate = false) {
     const now = Date.now();

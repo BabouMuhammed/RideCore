@@ -27,6 +27,7 @@ import { RateRider } from '../components/RateRider';
 import { DriverCancel } from '../components/DriverCancel';
 import { NotificationsCard } from '../../notifications/NotificationsCard';
 import { alertRider } from '../../notifications/alertSound';
+import { demoToolsEnabled, useDemoDrive } from '../demoDrive';
 
 const driverStatusLabels: Partial<Record<string, string>> = {
   accepted: 'Ride accepted',
@@ -71,6 +72,7 @@ export function DriveScreen() {
   }, [state.requests.length]);
   const insets = useSafeAreaInsets();
   const [maps] = useState(() => createMapService());
+  const demo = useDemoDrive(controller, maps);
   const [planned, setPlanned] = useState<{
     rideId: string;
     points: Coordinate[];
@@ -133,6 +135,28 @@ export function DriveScreen() {
   if (!approved) return <DriverOnboarding />;
 
   const next = active && ride ? nextAction(ride.status) : null;
+  // Demo: drive to the pickup (marking arrival there) or to the destination.
+  const demoLeg =
+    demoToolsEnabled && active && ride && location
+      ? ride.status === 'accepted' || ride.status === 'driver_arriving'
+        ? 'pickup'
+        : ride.status === 'in_progress'
+          ? 'destination'
+          : null
+      : null;
+  async function startDemo() {
+    if (!ride || !location || !demoLeg) return;
+    if (demoLeg === 'pickup') {
+      if (ride.status === 'accepted') await controller.advance();
+      void demo.drive(location, ride.pickup.location.coordinates, () => {
+        if (controller.getSnapshot().ride?.status === 'driver_arriving')
+          void controller.advance();
+      });
+    } else
+      void demo.drive(location, ride.destination.location.coordinates, () => {
+        /* The driver completes the trip themselves. */
+      });
+  }
   const target =
     ride && ride.status === 'in_progress' ? ride.destination : ride?.pickup;
 
@@ -198,6 +222,27 @@ export function DriveScreen() {
                 {money(ride.estimatedFare, ride.currency)}
               </Text>
             </View>
+            {demoLeg && (
+              <View style={styles.demo}>
+                <Text variant="caption" tone="secondary">
+                  {demo.driving
+                    ? `Demo drive: ${Math.round((demo.progress ?? 0) * 100)}% of the way to the ${demoLeg}`
+                    : 'Demo: simulate the drive along the real route. The rider sees the car move.'}
+                </Text>
+                <Button
+                  label={
+                    demo.driving
+                      ? 'Stop demo drive'
+                      : `Demo: drive to ${demoLeg}`
+                  }
+                  variant="secondary"
+                  disabled={state.busy}
+                  onPress={() =>
+                    demo.driving ? demo.stop() : void startDemo()
+                  }
+                />
+              </View>
+            )}
             {next && (
               <Button
                 label={next.label}
@@ -357,6 +402,14 @@ export function DriveScreen() {
 }
 
 const styles = StyleSheet.create({
+  demo: {
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+  },
   root: { flex: 1, minHeight: 0, backgroundColor: colors.neutral },
   status: {
     position: 'absolute',
