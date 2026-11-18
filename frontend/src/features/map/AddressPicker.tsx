@@ -3,6 +3,8 @@ import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useDemo } from '../../demo/DemoProvider';
 import { demoPlaces } from '../../demo/runtime';
+import { PlaceTiles } from '../places/PlaceTiles';
+import { landmarks } from '../places/landmarks';
 import { Input } from '../../components/ui/Input';
 import { Text } from '../../components/ui/Text';
 import { Button } from '../../components/ui/Button';
@@ -84,7 +86,7 @@ export function AddressPicker({
                 key: pinKey,
                 address: '',
                 error:
-                  'Address lookup is unavailable. Type a landmark for this pin.',
+                  'The street name isn’t available right now. You can still use this pin.',
               });
           });
     }, 500);
@@ -191,8 +193,38 @@ export function AddressPicker({
       </Text>
       {pinned ? (
         <>
+          <View style={styles.hint}>
+            <Icon name="move" size={16} color={colors.secondary} />
+            <Text variant="caption" tone="secondary">
+              {panning
+                ? 'Move the map to put the pin where you are.'
+                : 'Tap the map to move the pin.'}
+            </Text>
+          </View>
+          <Button
+            label={kind === 'pickup' ? 'Pick me up here' : 'Go here'}
+            disabled={busy || lookupBusy}
+            loading={lookupBusy}
+            onPress={() => {
+              try {
+                // A street name helps the driver, but riders who can't type
+                // can still confirm the pin itself.
+                onConfirm(
+                  makeStop(
+                    address.trim() ||
+                      (kind === 'pickup'
+                        ? 'Pickup point on the map'
+                        : 'Destination on the map'),
+                    pin,
+                  ),
+                );
+              } catch (error) {
+                setError(safeError(error).message);
+              }
+            }}
+          />
           <Input
-            label="Address or landmark for this pin"
+            label="Place name for the driver (optional)"
             value={address}
             placeholder={
               lookupBusy ? 'Looking up this place…' : 'e.g. Westfield Junction'
@@ -200,25 +232,6 @@ export function AddressPicker({
             prefix={<Icon name="pin" size={20} color={colors.brand} />}
             onChangeText={(value) => setDraft({ key: pinKey, value })}
             maxLength={120}
-          />
-          <View style={styles.hint}>
-            <Icon name="move" size={16} color={colors.secondary} />
-            <Text variant="caption" tone="secondary">
-              {panning
-                ? 'Move the map to adjust the pin.'
-                : 'Tap the map to move the pin.'}
-            </Text>
-          </View>
-          <Button
-            label={kind === 'pickup' ? 'Confirm pickup' : 'Confirm destination'}
-            disabled={!address.trim() || busy || lookupBusy}
-            onPress={() => {
-              try {
-                onConfirm(makeStop(address, pin));
-              } catch (error) {
-                setError(safeError(error).message);
-              }
-            }}
           />
         </>
       ) : (
@@ -327,6 +340,15 @@ export function AddressPicker({
               ))}
             </>
           )}
+          {!runtime && !searched && query.trim().length < 3 && (
+            <>
+              <SectionLabel>Popular places</SectionLabel>
+              <PlaceTiles
+                places={landmarks}
+                onPick={(place) => onConfirm(place.stop)}
+              />
+            </>
+          )}
           {!runtime && !searched && recent.length > 0 && (
             <>
               <SectionLabel>Recent places</SectionLabel>
@@ -370,7 +392,7 @@ export function AddressPicker({
         </Text>
       )}
       <Button
-        label="Go back"
+        label={pinned && onUnpin ? 'Search by name instead' : 'Go back'}
         variant="secondary"
         onPress={pinned && onUnpin ? onUnpin : onClose}
       />

@@ -70,8 +70,16 @@ test('real booking interactions select addresses, request server fares and creat
   await fireEvent.press(screen.getByRole('button', { name: 'Where to?' }));
   await waitFor(() => expect(h.controller.getSnapshot().loading).toBe(false));
   // "Where to?" opens the destination search; with no known pickup, the
-  // pickup search follows it.
+  // pickup opens on the map, pin first, with searching one tap away.
   for (const kind of ['Destination', 'Pickup']) {
+    if (kind === 'Pickup') {
+      expect(
+        await screen.findByRole('button', { name: 'Pick me up here' }),
+      ).toBeOnTheScreen();
+      await fireEvent.press(
+        screen.getByRole('button', { name: 'Search by name instead' }),
+      );
+    }
     await fireEvent.changeText(
       await screen.findByLabelText(kind),
       kind + ' landmark',
@@ -230,6 +238,44 @@ test('typing a place shows results without pressing a search button', async () =
     ),
   );
   expect(confirm).toHaveBeenCalledWith(trip.destination);
+});
+test('a popular place tile books its destination in one tap, then pickup opens pin first', async () => {
+  const h = fixture();
+  await mount(h, <BookingHome />);
+  await fireEvent.press(
+    await screen.findByRole('button', { name: 'Westfield, Serrekunda' }),
+  );
+  expect(
+    await screen.findByRole('button', { name: 'Pick me up here' }),
+  ).toBeOnTheScreen();
+  expect(screen.getByText('Set pickup location')).toBeOnTheScreen();
+});
+test('a pin can be confirmed without typing a place name', async () => {
+  const h = fixture(),
+    confirm = jest.fn();
+  const point: [number, number] = [-16.68, 13.44];
+  await mount(
+    h,
+    <AddressPicker
+      kind="pickup"
+      pin={point}
+      panning
+      onPin={jest.fn()}
+      onConfirm={confirm}
+      onClose={jest.fn()}
+      onUnpin={jest.fn()}
+    />,
+  );
+  const button = await screen.findByRole('button', { name: 'Pick me up here' });
+  await waitFor(() => expect(button).toBeEnabled(), { timeout: 3000 });
+  await fireEvent.press(button);
+  expect(confirm).toHaveBeenCalledWith(
+    expect.objectContaining({
+      address: expect.any(String),
+      location: { type: 'Point', coordinates: point },
+    }),
+  );
+  expect(confirm.mock.calls[0][0].address.trim()).not.toBe('');
 });
 test('share URLs use a bearer fragment; revocation stays available even if no local grant is retained', async () => {
   const url = new URL(

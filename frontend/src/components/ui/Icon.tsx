@@ -31,10 +31,24 @@ import MessageCircle from 'lucide-react-native/icons/message-circle';
 import Navigation from 'lucide-react-native/icons/navigation';
 import Power from 'lucide-react-native/icons/power';
 import Wallet from 'lucide-react-native/icons/wallet';
+import Plane from 'lucide-react-native/icons/plane';
+import ShoppingBasket from 'lucide-react-native/icons/shopping-basket';
+import TreePalm from 'lucide-react-native/icons/tree-palm';
+import Hospital from 'lucide-react-native/icons/hospital';
+import GraduationCap from 'lucide-react-native/icons/graduation-cap';
+import Landmark from 'lucide-react-native/icons/landmark';
+import Signpost from 'lucide-react-native/icons/signpost';
 import type { LucideIcon } from 'lucide-react-native';
 import { Platform } from 'react-native';
 import { colors, size as sizes } from '../../theme/tokens';
 const icons = {
+  plane: Plane,
+  market: ShoppingBasket,
+  beach: TreePalm,
+  hospital: Hospital,
+  school: GraduationCap,
+  landmark: Landmark,
+  junction: Signpost,
   share: Share2,
   check: Check,
   arrowUpRight: ArrowUpRight,

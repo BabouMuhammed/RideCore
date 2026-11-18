@@ -133,7 +133,12 @@ export function BookingHome({
           : makeStop('My current location', point);
         setPickup((current) => current ?? stop);
         // A pickup picker opened only because we had no pickup can close.
-        setSelecting((current) => (current === 'pickup' ? null : current));
+        setSelecting((current) => {
+          if (current !== 'pickup') return current;
+          setMapPick(null);
+          setPin(null);
+          return null;
+        });
       } catch {
         // Location is optional.
       }
@@ -258,6 +263,16 @@ export function BookingHome({
     here ??
     initialCenter;
   const picking = !!selecting && !trip && !state.loading;
+  // Pickup starts on the map, pin first: the rider moves the map under the
+  // pin and taps "Pick me up here". No reading or typing needed; searching
+  // by name is one tap away.
+  function startPickup(at?: Coordinate) {
+    setSelecting('pickup');
+    if (runtime) return;
+    const start = at ?? here ?? initialCenter;
+    setMapPick({ start });
+    setPin(start);
+  }
   function plan(recentDestination?: Stop, search?: string) {
     setPlanning(true);
     setConfirm(false);
@@ -265,7 +280,8 @@ export function BookingHome({
     if (recentDestination) {
       setDestination(recentDestination);
       setEstimates({});
-      setSelecting(pickup ? null : 'pickup');
+      if (pickup) setSelecting(null);
+      else startPickup();
     } else setSelecting('destination');
     void locate(true);
   }
@@ -339,7 +355,9 @@ export function BookingHome({
   }
   function choose(kind: 'pickup' | 'destination') {
     setPin(null);
-    setSelecting(kind);
+    setMapPick(null);
+    if (kind === 'pickup') startPickup(pickup?.location.coordinates);
+    else setSelecting(kind);
     setConfirm(false);
     setError(undefined);
   }
@@ -460,7 +478,7 @@ export function BookingHome({
               else setDestination(stop);
               stopPicking();
               // Uber-style: destination first, then pickup if we don't know it.
-              setSelecting(next);
+              if (next) startPickup();
             }}
           />
         ) : visibleContext === 'cancel' ? (

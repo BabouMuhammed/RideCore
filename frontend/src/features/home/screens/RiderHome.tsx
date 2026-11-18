@@ -2,7 +2,12 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useContext, useMemo } from 'react';
 import { NavigationContext } from '@react-navigation/native';
-import Svg, { Defs, LinearGradient, Rect, Stop as GradientStop } from 'react-native-svg';
+import Svg, {
+  Defs,
+  LinearGradient,
+  Rect,
+  Stop as GradientStop,
+} from 'react-native-svg';
 import { Text } from '../../../components/ui/Text';
 import { Icon } from '../../../components/ui/Icon';
 import { Wordmark } from '../../../components/brand/Wordmark';
@@ -11,7 +16,14 @@ import { DemoMap } from '../../../demo/DemoMap';
 import { useDemo } from '../../../demo/DemoProvider';
 import { initialCenter } from '../../../services/geo';
 import type { RiderTabParams } from '../../../navigation/types';
-import { colors, elevation, fonts, radius, size, space } from '../../../theme/tokens';
+import {
+  colors,
+  elevation,
+  fonts,
+  radius,
+  size,
+  space,
+} from '../../../theme/tokens';
 import { useSession } from '../../session/SessionProvider';
 import type {
   Category,
@@ -20,13 +32,19 @@ import type {
   Trip,
 } from '../../../services/journey-api';
 import type { MapPin } from '../../map/MapCanvas.types';
+import { PlaceTiles } from '../../places/PlaceTiles';
+import { landmarks } from '../../places/landmarks';
 
 export const rideOptions: {
   category: Category;
   title: string;
   detail: string;
 }[] = [
-  { category: 'economy', title: 'Economy', detail: 'Affordable everyday rides' },
+  {
+    category: 'economy',
+    title: 'Economy',
+    detail: 'Affordable everyday rides',
+  },
   { category: 'comfort', title: 'Comfort', detail: 'More space and comfort' },
   { category: 'xl', title: 'XL', detail: 'For larger groups' },
 ];
@@ -36,7 +54,9 @@ function recentPlaces(history: Trip[]) {
   const seen = new Set<string>();
   const places: Stop[] = [];
   for (const trip of history) {
-    const key = trip.destination.address.toLowerCase();
+    // Same place saved with different detail ("Senegambia Strip" vs
+    // "Senegambia Strip, Kololi") counts once.
+    const key = trip.destination.address.split(',')[0]!.trim().toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
     places.push(trip.destination);
@@ -49,12 +69,6 @@ function recentPlaces(history: Trip[]) {
 // destinations, and a live map preview.
 // Well-known places offered before the rider has any history. Tapping one
 // searches for it by name, so its position always comes from the map data.
-const popularPlaces = [
-  { name: 'Westfield Junction', area: 'Serrekunda' },
-  { name: 'Serrekunda Market', area: 'Serrekunda' },
-  { name: 'Senegambia', area: 'Kololi' },
-  { name: 'Banjul International Airport', area: 'Yundum' },
-];
 
 export function RiderHome({
   onPlan,
@@ -90,7 +104,12 @@ export function RiderHome({
   return (
     <ScrollView style={styles.root} contentContainerStyle={{ flexGrow: 1 }}>
       <View style={[styles.hero, { paddingTop: insets.top + space.md }]}>
-        <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none">
+        <Svg
+          style={StyleSheet.absoluteFill}
+          width="100%"
+          height="100%"
+          preserveAspectRatio="none"
+        >
           <Defs>
             <LinearGradient id="hero" x1="0" y1="0" x2="1" y2="0">
               <GradientStop offset="0" stopColor={colors.heroStart} />
@@ -141,7 +160,10 @@ export function RiderHome({
             accessibilityRole="button"
             accessibilityLabel="Where to?"
             onPress={() => onPlan()}
-            style={({ pressed }) => [styles.search, pressed && { opacity: 0.9 }]}
+            style={({ pressed }) => [
+              styles.search,
+              pressed && { opacity: 0.9 },
+            ]}
           >
             <Icon name="search" size={22} />
             <Text style={styles.searchText}>Where to?</Text>
@@ -152,61 +174,54 @@ export function RiderHome({
 
       <View style={styles.recent}>
         <View style={styles.inner}>
-          <Text style={styles.sectionHeading} accessibilityRole="header">
-            {places.length === 0 ? 'Popular places' : 'Recent destinations'}
-          </Text>
-          {places.length === 0 ? (
-            popularPlaces.slice(0, 3).map((place) => (
-              <Pressable
-                key={place.name}
-                accessibilityRole="button"
-                accessibilityLabel={`${place.name}, ${place.area}, popular place`}
-                onPress={() =>
-                  onPlan(undefined, undefined, `${place.name}, ${place.area}`)
-                }
-                style={({ pressed }) => [styles.place, pressed && { backgroundColor: colors.neutral }]}
-              >
-                <View style={styles.tile}>
-                  <Icon name="pin" size={20} />
-                </View>
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Text variant="label">{place.name}</Text>
-                  <Text variant="caption" tone="secondary">
-                    {place.area}
-                  </Text>
-                </View>
-                <Icon name="chevron" size={16} color={colors.secondary} />
-              </Pressable>
-            ))
-          ) : (
-            places.map((place) => {
-              const [name, ...rest] = place.address.split(',');
-              return (
-                <Pressable
-                  key={place.address}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${place.address}, recent destination`}
-                  onPress={() => onPlan(undefined, place)}
-                  style={({ pressed }) => [styles.place, pressed && { backgroundColor: colors.neutral }]}
-                >
-                  <View style={styles.tile}>
-                    <Icon name="activity" size={20} />
-                  </View>
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text variant="label" numberOfLines={2}>
-                      {name!.trim()}
-                    </Text>
-                    {rest.length > 0 && (
-                      <Text variant="caption" tone="secondary" numberOfLines={1}>
-                        {rest.join(',').trim()}
+          {places.length > 0 && (
+            <>
+              <Text style={styles.sectionHeading} accessibilityRole="header">
+                Recent destinations
+              </Text>
+              {places.map((place) => {
+                const [name, ...rest] = place.address.split(',');
+                return (
+                  <Pressable
+                    key={place.address}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${place.address}, recent destination`}
+                    onPress={() => onPlan(undefined, place)}
+                    style={({ pressed }) => [
+                      styles.place,
+                      pressed && { backgroundColor: colors.neutral },
+                    ]}
+                  >
+                    <View style={styles.tile}>
+                      <Icon name="activity" size={20} />
+                    </View>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text variant="label" numberOfLines={2}>
+                        {name!.trim()}
                       </Text>
-                    )}
-                  </View>
-                  <Icon name="chevron" size={16} color={colors.secondary} />
-                </Pressable>
-              );
-            })
+                      {rest.length > 0 && (
+                        <Text
+                          variant="caption"
+                          tone="secondary"
+                          numberOfLines={1}
+                        >
+                          {rest.join(',').trim()}
+                        </Text>
+                      )}
+                    </View>
+                    <Icon name="chevron" size={16} color={colors.secondary} />
+                  </Pressable>
+                );
+              })}
+            </>
           )}
+          <Text style={styles.sectionHeading} accessibilityRole="header">
+            Popular places
+          </Text>
+          <PlaceTiles
+            places={landmarks.slice(0, places.length > 0 ? 4 : 6)}
+            onPick={(place) => onPlan(undefined, place.stop)}
+          />
         </View>
       </View>
 
@@ -239,12 +254,37 @@ export function RiderHome({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.surface },
   inner: { width: '100%', maxWidth: size.contentMax, alignSelf: 'center' },
-  hero: { paddingHorizontal: space.xl, paddingBottom: space.xl, overflow: 'hidden' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  menu: { width: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' },
+  hero: {
+    paddingHorizontal: space.xl,
+    paddingBottom: space.xl,
+    overflow: 'hidden',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  menu: {
+    width: 44,
+    height: 44,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
   greeting: { marginTop: space.xl, gap: space.sm },
-  location: { flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start', minHeight: 32 },
-  locationText: { fontFamily: fonts.medium, fontSize: 13, lineHeight: 18, color: colors.text, maxWidth: 240 },
+  location: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    alignSelf: 'flex-start',
+    minHeight: 32,
+  },
+  locationText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.text,
+    maxWidth: 240,
+  },
   search: {
     marginTop: space.xl,
     flexDirection: 'row',
@@ -256,10 +296,34 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     ...elevation.floating,
   },
-  searchText: { flex: 1, fontFamily: fonts.medium, fontSize: 24, lineHeight: 30, color: colors.text, letterSpacing: -0.6 },
-  recent: { paddingHorizontal: space.xl, paddingTop: space.xl, paddingBottom: space.md, backgroundColor: colors.surface },
-  sectionHeading: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20, color: colors.text, marginBottom: space.sm },
-  place: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 72, paddingVertical: space.sm },
+  searchText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 24,
+    lineHeight: 30,
+    color: colors.text,
+    letterSpacing: -0.6,
+  },
+  recent: {
+    paddingHorizontal: space.xl,
+    paddingTop: space.xl,
+    paddingBottom: space.md,
+    backgroundColor: colors.surface,
+  },
+  sectionHeading: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.text,
+    marginBottom: space.sm,
+  },
+  place: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    minHeight: 72,
+    paddingVertical: space.sm,
+  },
   tile: {
     width: size.tile,
     height: size.tile,
@@ -268,7 +332,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  map: { flexGrow: 1, minHeight: 280, backgroundColor: colors.neutral, overflow: 'hidden' },
+  map: {
+    flexGrow: 1,
+    minHeight: 280,
+    backgroundColor: colors.neutral,
+    overflow: 'hidden',
+  },
   mapCaption: {
     position: 'absolute',
     left: space.xl,
