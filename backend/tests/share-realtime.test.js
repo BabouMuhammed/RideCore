@@ -143,7 +143,15 @@ describe("public namespace authorization and isolation", () => {
     expect(result.data.rideStatus).toBe("accepted");
     expect(result.data.location).toBeNull();
     expect(Object.keys(result.data).sort()).toEqual(
-      ["rideStatus", "driver", "vehicle", "location", "trip", "sharing"].sort(),
+      [
+        "rideStatus",
+        "rider",
+        "driver",
+        "vehicle",
+        "location",
+        "trip",
+        "sharing",
+      ].sort(),
     );
     expect(JSON.stringify(result)).not.toMatch(
       /tokenHash|generation|licenseNumber|email|phone|password|_id|rideId/,

@@ -66,6 +66,8 @@ export type ShareGrant = {
 };
 export type PublicSnapshot = {
   rideStatus: Trip['status'];
+  /** The rider's first name; absent from older servers. */
+  rider?: { firstName: string } | null;
   driver: { firstName: string; rating: number } | null;
   vehicle: Trip['vehicle'];
   location: { latitude: number; longitude: number; updatedAt: string } | null;
@@ -173,6 +175,7 @@ export function publicSnapshot(value: unknown): PublicSnapshot {
       throw new AppError('contract');
   }
   if (v.driver != null) text(record(v.driver).firstName);
+  if (v.rider != null) text(record(v.rider).firstName);
   if (v.vehicle != null)
     for (const field of ['make', 'model', 'color', 'plateNumber'])
       text(record(v.vehicle)[field]);

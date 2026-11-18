@@ -8,7 +8,9 @@ const stopDto = (stop) => ({
 export async function sharedSnapshot(token) {
   const access = await resolveShareToken(token);
   const { ride, share } = access;
-  const [driver, profile, vehicle] = await Promise.all([
+  const [rider, driver, profile, vehicle] = await Promise.all([
+    // Only the first name, so the people the rider chose know whose trip it is.
+    User.findById(ride.rider).select("firstName"),
     User.findById(ride.driver).select("firstName"),
     DriverProfile.findOne({ user: ride.driver }).select("ratingAverage"),
     Vehicle.findOne({ driver: ride.driver }).select(
@@ -19,6 +21,7 @@ export async function sharedSnapshot(token) {
   const sample = ride.trackingLocation;
   const data = {
     rideStatus: ride.status,
+    rider: rider ? { firstName: rider.firstName } : null,
     driver: driver
       ? { firstName: driver.firstName, rating: profile?.ratingAverage ?? 0 }
       : null,

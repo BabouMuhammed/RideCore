@@ -1,9 +1,14 @@
-import { render, screen, act } from '@testing-library/react-native';
+import { render, screen, act, fireEvent } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { io } from 'socket.io-client';
 import { createJourneyApi } from '../src/services/journey-api';
 import { AppError } from '../src/services/errors';
-import { PublicShareViewer } from '../src/features/sharing/PublicShareViewer';
+import {
+  PublicShareViewer,
+  viewerHeadline,
+  freshness,
+} from '../src/features/sharing/PublicShareViewer';
 jest.mock('../src/services/journey-api', () => ({
   ...jest.requireActual('../src/services/journey-api'),
   createJourneyApi: jest.fn(),
@@ -60,17 +65,13 @@ test('recipient needs no rider session and public end notification clears trip i
     .mocked(createJourneyApi)
     .mockReturnValue(api as unknown as ReturnType<typeof createJourneyApi>);
   await mount();
-  expect(
-    await screen.findByText('Pickup · Synthetic pickup'),
-  ).toBeOnTheScreen();
+  expect(await screen.findByText('Synthetic pickup')).toBeOnTheScreen();
   const socket = jest.mocked(io).mock.results[0]!.value as unknown as {
     handlers: Map<string, () => void>;
   };
   await act(() => socket.handlers.get('share:ended')!());
-  expect(
-    await screen.findByText('Sharing has ended or this link is unavailable.'),
-  ).toBeOnTheScreen();
-  expect(screen.queryByText('Pickup · Synthetic pickup')).not.toBeOnTheScreen();
+  expect(await screen.findByText('Sharing has ended')).toBeOnTheScreen();
+  expect(screen.queryByText('Synthetic pickup')).not.toBeOnTheScreen();
   expect(io).toHaveBeenCalledWith(
     'https://api.example.test/shared-rides',
     expect.not.objectContaining({ auth: expect.anything() }),
@@ -90,12 +91,8 @@ test.each(['expired', 'unavailable'] as const)(
       .mocked(createJourneyApi)
       .mockReturnValue(api as unknown as ReturnType<typeof createJourneyApi>);
     await mount();
-    expect(
-      await screen.findByText('Sharing has ended or this link is unavailable.'),
-    ).toBeOnTheScreen();
-    expect(
-      screen.queryByText('Pickup · Synthetic pickup'),
-    ).not.toBeOnTheScreen();
+    expect(await screen.findByText('Sharing has ended')).toBeOnTheScreen();
+    expect(screen.queryByText('Synthetic pickup')).not.toBeOnTheScreen();
   },
 );
 test('public network failure shows retry without exposing a token or backend error', async () => {
@@ -114,7 +111,7 @@ test('public GPS updates are validated and do not issue a REST request for every
     .mocked(createJourneyApi)
     .mockReturnValue(api as unknown as ReturnType<typeof createJourneyApi>);
   await mount();
-  await screen.findByText('Pickup · Synthetic pickup');
+  await screen.findByText('Synthetic pickup');
   const socket = jest.mocked(io).mock.results[0]!.value as unknown as {
     handlers: Map<string, (sample: unknown) => void>;
   };
@@ -125,7 +122,9 @@ test('public GPS updates are validated and do not issue a REST request for every
       updatedAt: '2026-10-28T12:00:00Z',
     }),
   );
-  expect(screen.getByText(/Last driver update:/)).toBeOnTheScreen();
+  expect(
+    screen.getByText(/Location updated|Last location at/),
+  ).toBeOnTheScreen();
   await act(() =>
     socket.handlers.get('share:location')!({
       longitude: 0,
@@ -150,7 +149,7 @@ test('an older persisted public snapshot cannot roll back a newer real socket lo
     .mocked(createJourneyApi)
     .mockReturnValue(api as unknown as ReturnType<typeof createJourneyApi>);
   await mount();
-  await screen.findByText('Pickup · Synthetic pickup');
+  await screen.findByText('Synthetic pickup');
   const socket = jest.mocked(io).mock.results[0]!.value as unknown as {
     handlers: Map<string, (sample?: unknown) => void>;
   };
@@ -162,7 +161,7 @@ test('an older persisted public snapshot cannot roll back a newer real socket lo
     }),
   );
   const lastUpdate = String(
-    screen.getByText(/Last driver update:/).props.children,
+    screen.getByText(/Location updated|Last location at/).props.children,
   );
   api.snapshot.mockResolvedValue({
     ...snapshot,
@@ -170,6 +169,58 @@ test('an older persisted public snapshot cannot roll back a newer real socket lo
     location: { longitude: 0, latitude: 0, updatedAt: '2026-10-28T12:00:00Z' },
   });
   await act(() => socket.handlers.get('share:ride-status')!());
-  await screen.findByText('Your driver is approaching');
-  expect(screen.getByText(/Last driver update:/)).toHaveTextContent(lastUpdate);
+  await screen.findByText(/Driver is on the way to pick up/);
+  expect(
+    screen.getByText(/Location updated|Last location at/),
+  ).toHaveTextContent(lastUpdate);
+});
+test('the page speaks to the person watching and offers emergency numbers', async () => {
+  const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+  jest.mocked(createJourneyApi).mockReturnValue({
+    snapshot: jest.fn().mockResolvedValue({
+      ...snapshot,
+      rideStatus: 'in_progress',
+      rider: { firstName: 'Awa' },
+    }),
+  } as unknown as ReturnType<typeof createJourneyApi>);
+  await mount();
+  expect(await screen.findByText('Awa’s trip')).toBeOnTheScreen();
+  expect(screen.getByText(/^Awa is on the way to /)).toBeOnTheScreen();
+  expect(
+    screen.getByRole('button', { name: 'Police · 117' }),
+  ).toBeOnTheScreen();
+  await fireEvent.press(
+    screen.getByRole('button', { name: 'Ambulance · 116' }),
+  );
+  expect(open).toHaveBeenCalledWith('tel:116');
+  open.mockRestore();
+});
+test('viewer wording and freshness', () => {
+  const trip = {
+    pickup: {
+      address: 'Westfield, Serrekunda',
+      latitude: 13.4,
+      longitude: -16.6,
+    },
+    destination: {
+      address: 'Senegambia, Kololi',
+      latitude: 13.4,
+      longitude: -16.7,
+    },
+  };
+  expect(viewerHeadline({ rideStatus: 'accepted', trip }, 'Awa')).toBe(
+    'Driver is on the way to pick up Awa',
+  );
+  expect(viewerHeadline({ rideStatus: 'driver_arrived', trip }, null)).toBe(
+    'Driver has arrived to pick up the rider',
+  );
+  expect(viewerHeadline({ rideStatus: 'in_progress', trip }, 'Awa')).toBe(
+    'Awa is on the way to Senegambia',
+  );
+  expect(freshness(12000, '2026-11-18T05:00:00Z')).toBe(
+    'Location updated 12 s ago',
+  );
+  expect(freshness(120000, '2026-11-18T05:00:00Z')).toMatch(
+    /^Last location at /,
+  );
 });

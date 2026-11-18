@@ -10,6 +10,7 @@ import { safeError } from '../../services/errors';
 import { useJourney } from '../journey/JourneyProvider';
 import { useDemo } from '../../demo/DemoProvider';
 import { statusLabels } from '../journey/presentation';
+import { isLocalNetworkHost } from '../../services/server-config';
 
 export function recipientUrl(
   token: string,
@@ -27,7 +28,11 @@ export function recipientUrl(
       url.password ||
       url.search ||
       url.hash ||
-      (!__DEV__ && url.protocol !== 'https:')
+      // Release builds share https links, except on a home network (a
+      // laptop demo), where the link only works on that network anyway.
+      (!__DEV__ &&
+        url.protocol !== 'https:' &&
+        !isLocalNetworkHost(url.hostname))
     )
       return null;
     // Keep the bearer capability out of server request URLs and referrers.

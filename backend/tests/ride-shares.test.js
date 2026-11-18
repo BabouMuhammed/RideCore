@@ -37,9 +37,19 @@ const gps = (id) => ({
 });
 function assertMinimized(data) {
   expect(Object.keys(data).sort()).toEqual(
-    ["rideStatus", "driver", "vehicle", "location", "trip", "sharing"].sort(),
+    [
+      "rideStatus",
+      "rider",
+      "driver",
+      "vehicle",
+      "location",
+      "trip",
+      "sharing",
+    ].sort(),
   );
   expect(Object.keys(data.driver).sort()).toEqual(["firstName", "rating"]);
+  // The rider's first name only, so chosen contacts know whose trip it is.
+  expect(Object.keys(data.rider)).toEqual(["firstName"]);
   expect(Object.keys(data.vehicle).sort()).toEqual(
     ["make", "model", "color", "plateNumber"].sort(),
   );
