@@ -91,7 +91,7 @@ export async function nearbyDrivers(coordinates, radiusKm) {
     },
   ]);
 }
-export const defaultTimeoutSeconds = 180;
+export const defaultTimeoutSeconds = 60;
 // Requests created before expiry existed have no requestExpiresAt; treat them
 // as expiring a default interval after they were requested.
 export function openRequestFilter(now = new Date()) {

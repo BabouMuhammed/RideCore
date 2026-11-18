@@ -87,7 +87,7 @@ describe('searching for a driver', () => {
     expect(onCheck).toHaveBeenCalledTimes(1);
   });
 
-  it('falls back to a three-minute window for older requests', async () => {
+  it('falls back to a one-minute window for older requests', async () => {
     await render(
       <SearchingPanel
         requestedAt={start}
@@ -100,7 +100,7 @@ describe('searching for a driver', () => {
       screen.getByText('Checking for drivers near your pickup…'),
     ).toBeTruthy();
     expect(
-      screen.getByText('We’ll keep looking for up to 3 minutes.'),
+      screen.getByText('We’ll keep looking for up to 1 minute.'),
     ).toBeTruthy();
   });
 

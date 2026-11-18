@@ -104,7 +104,29 @@ export function AddressPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => () => pending.current?.abort(), []);
-  async function search() {
+  // Search as you type: results appear once typing pauses, so there's no
+  // separate search button to find. The pause also respects the public
+  // geocoder's limit of about one request per second.
+  const typing = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (typing.current) clearTimeout(typing.current);
+    },
+    [],
+  );
+  function type(text: string) {
+    setQuery(text);
+    if (typing.current) clearTimeout(typing.current);
+    if (text.trim().length < 3) {
+      pending.current?.abort();
+      setResults([]);
+      setSearched(false);
+      setBusy(false);
+      return;
+    }
+    typing.current = setTimeout(() => void search(text), 800);
+  }
+  async function search(text = query) {
     pending.current?.abort();
     const abort = new AbortController();
     pending.current = abort;
@@ -112,7 +134,7 @@ export function AddressPicker({
     setError(undefined);
     setSearched(false);
     try {
-      const results = await maps.search(query, abort.signal);
+      const results = await maps.search(text, abort.signal);
       if (!abort.signal.aborted) {
         setResults(results);
         setSearched(true);
@@ -172,7 +194,9 @@ export function AddressPicker({
           <Input
             label="Address or landmark for this pin"
             value={address}
-            placeholder={lookupBusy ? 'Looking up this place…' : 'e.g. Westfield Junction'}
+            placeholder={
+              lookupBusy ? 'Looking up this place…' : 'e.g. Westfield Junction'
+            }
             prefix={<Icon name="pin" size={20} color={colors.brand} />}
             onChangeText={(value) => setDraft({ key: pinKey, value })}
             maxLength={120}
@@ -201,21 +225,31 @@ export function AddressPicker({
         <>
           <Input
             label={kind === 'pickup' ? 'Pickup' : 'Destination'}
-            placeholder={kind === 'pickup' ? 'Search pickup point' : 'Search a place or landmark'}
-            prefix={<Icon name={kind === 'pickup' ? 'pin' : 'search'} size={20} color={colors.brand} />}
+            placeholder={
+              kind === 'pickup'
+                ? 'Search pickup point'
+                : 'Search a place or landmark'
+            }
+            prefix={
+              <Icon
+                name={kind === 'pickup' ? 'pin' : 'search'}
+                size={20}
+                color={colors.brand}
+              />
+            }
             value={query}
-            onChangeText={setQuery}
+            onChangeText={type}
             returnKeyType="search"
-            onSubmitEditing={() => void search()}
+            onSubmitEditing={() => {
+              if (typing.current) clearTimeout(typing.current);
+              void search();
+            }}
             maxLength={120}
           />
-          {query.trim().length >= 3 && (
-            <Button
-              label="Search places"
-              variant="secondary"
-              loading={busy}
-              onPress={() => void search()}
-            />
+          {busy && query.trim().length >= 3 && (
+            <Text tone="secondary" accessibilityLiveRegion="polite">
+              Searching…
+            </Text>
           )}
           {searched && !results.length && (
             <Text tone="secondary">
@@ -223,29 +257,46 @@ export function AddressPicker({
             </Text>
           )}
           {results.map((stop, index) => (
-            <ListRow key={index} icon="pin" title={stop.address} onPress={() => onConfirm(stop)} />
+            <ListRow
+              key={index}
+              icon="pin"
+              title={stop.address}
+              onPress={() => onConfirm(stop)}
+            />
           ))}
           <View>
             {kind === 'pickup' && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={runtime ? 'Use demo pickup location' : 'Use my current location'}
-              disabled={busy}
-              onPress={() => void locate()}
-              style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]}
-            >
-              <Icon name="locate" size={20} />
-              <Text variant="label" style={{ flex: 1 }}>
-                {runtime ? 'Use demo pickup location' : 'Use my current location'}
-              </Text>
-              <Icon name="arrowRight" size={18} />
-            </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  runtime
+                    ? 'Use demo pickup location'
+                    : 'Use my current location'
+                }
+                disabled={busy}
+                onPress={() => void locate()}
+                style={({ pressed }) => [
+                  styles.action,
+                  pressed && { opacity: 0.6 },
+                ]}
+              >
+                <Icon name="locate" size={20} />
+                <Text variant="label" style={{ flex: 1 }}>
+                  {runtime
+                    ? 'Use demo pickup location'
+                    : 'Use my current location'}
+                </Text>
+                <Icon name="arrowRight" size={18} />
+              </Pressable>
             )}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Choose on map"
               onPress={() => (onPanMap ? onPanMap() : setOnMap(true))}
-              style={({ pressed }) => [styles.action, pressed && { opacity: 0.6 }]}
+              style={({ pressed }) => [
+                styles.action,
+                pressed && { opacity: 0.6 },
+              ]}
             >
               <Icon name="map" size={20} color={colors.brand} />
               <Text variant="label" style={{ flex: 1 }}>
@@ -329,5 +380,10 @@ export function AddressPicker({
 
 const styles = StyleSheet.create({
   hint: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  action: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48 },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    minHeight: 48,
+  },
 });

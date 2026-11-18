@@ -9,12 +9,12 @@ afterAll(cleanup);
 const later = (seconds) => new Date(Date.now() + seconds * 1000);
 
 describe("ride request expiry", () => {
-  it("gives each new request an expiry time three minutes out", async () => {
+  it("gives each new request an expiry time one minute out", async () => {
     const ride = await createRide();
     const left =
       Date.parse(ride.requestExpiresAt) - Date.parse(ride.requestedAt);
-    expect(left).toBeGreaterThan(175000);
-    expect(left).toBeLessThanOrEqual(181000);
+    expect(left).toBeGreaterThan(55000);
+    expect(left).toBeLessThanOrEqual(61000);
   });
 
   it("leaves open requests alone", async () => {
@@ -28,7 +28,7 @@ describe("ride request expiry", () => {
     const listen = (event) => events.push(event);
     rideEvents.on("change", listen);
     try {
-      expect(await expireStaleRequests(later(181))).toBe(1);
+      expect(await expireStaleRequests(later(61))).toBe(1);
     } finally {
       rideEvents.off("change", listen);
     }

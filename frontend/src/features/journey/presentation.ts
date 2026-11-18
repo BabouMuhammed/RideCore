@@ -9,7 +9,7 @@ export const statusLabels: Record<Trip['status'], string> = {
   cancelled: 'Ride cancelled',
 };
 export const noDriverFound = 'no_driver_found';
-export const requestTimeoutSeconds = 180;
+export const requestTimeoutSeconds = 60;
 export function headline(trip: Pick<Trip, 'status' | 'cancellationReason'>) {
   return trip.status === 'cancelled' &&
     trip.cancellationReason === noDriverFound

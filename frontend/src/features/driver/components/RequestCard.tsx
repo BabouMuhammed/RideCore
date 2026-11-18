@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from '../../../components/ui/Text';
 import { Button } from '../../../components/ui/Button';
@@ -35,6 +36,19 @@ export function RequestCard({
   const away = from
     ? kmBetween(from, request.pickup.location.coordinates)
     : null;
+  // Riders wait about a minute; show the driver how long is left.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!request.requestExpiresAt) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [request.requestExpiresAt]);
+  const left = request.requestExpiresAt
+    ? Math.max(
+        0,
+        Math.ceil((Date.parse(request.requestExpiresAt) - now) / 1000),
+      )
+    : null;
   return (
     <View style={styles.card}>
       <View style={styles.top}>
@@ -58,13 +72,18 @@ export function RequestCard({
         {[
           away != null ? `Pickup ${km(away)} away` : null,
           `Trip ${km(request.distance)}`,
+          left != null
+            ? left > 0
+              ? `Expires in ${left}s`
+              : 'Expiring…'
+            : null,
         ]
           .filter(Boolean)
           .join(' · ')}
       </Text>
       <Button
         label="Accept ride"
-       
+
         disabled={busy}
         onPress={onAccept}
         accessibilityLabel={`Accept ride from ${request.pickup.address}`}
@@ -91,6 +110,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { fontFamily: fonts.bold, fontSize: 14, lineHeight: 18, color: colors.onBrand },
-  fare: { fontFamily: fonts.bold, fontSize: 17, lineHeight: 22, color: colors.text },
+  badgeText: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.onBrand,
+  },
+  fare: {
+    fontFamily: fonts.bold,
+    fontSize: 17,
+    lineHeight: 22,
+    color: colors.text,
+  },
 });

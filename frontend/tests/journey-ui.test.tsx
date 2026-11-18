@@ -76,9 +76,8 @@ test('real booking interactions select addresses, request server fares and creat
       await screen.findByLabelText(kind),
       kind + ' landmark',
     );
-    await fireEvent.press(
-      screen.getByRole('button', { name: 'Search places' }),
-    );
+    // The keyboard's search key searches straight away.
+    await fireEvent(screen.getByLabelText(kind), 'submitEditing');
     await fireEvent.press(
       await screen.findByRole('button', {
         name: 'Synthetic ' + kind.toLowerCase(),
@@ -89,9 +88,7 @@ test('real booking interactions select addresses, request server fares and creat
   await screen.findByRole('button', { name: 'Continue' });
   expect(h.api.estimate).toHaveBeenCalledTimes(3);
   expect(h.api.create).not.toHaveBeenCalled();
-  await fireEvent.press(
-    screen.getByRole('button', { name: 'Continue' }),
-  );
+  await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
   expect(h.api.create).not.toHaveBeenCalled();
   await fireEvent.press(screen.getByRole('button', { name: 'Confirm ride' }));
   expect(await screen.findByText('Finding your driver')).toBeOnTheScreen();
@@ -201,11 +198,38 @@ test('denied foreground permission still permits address search and manual map s
     screen.getByLabelText('Pickup'),
     'Pickup landmark',
   );
-  await fireEvent.press(screen.getByRole('button', { name: 'Search places' }));
+  await fireEvent(screen.getByLabelText('Pickup'), 'submitEditing');
   await fireEvent.press(
     await screen.findByRole('button', { name: 'Synthetic pickup' }),
   );
   expect(confirm).toHaveBeenCalledWith(trip.pickup);
+});
+test('typing a place shows results without pressing a search button', async () => {
+  const h = fixture(),
+    confirm = jest.fn();
+  await mount(
+    h,
+    <AddressPicker
+      kind="destination"
+      pin={null}
+      onPin={jest.fn()}
+      onConfirm={confirm}
+      onClose={jest.fn()}
+    />,
+  );
+  expect(screen.queryByRole('button', { name: 'Search places' })).toBeNull();
+  await fireEvent.changeText(
+    screen.getByLabelText('Destination'),
+    'Destination landmark',
+  );
+  await fireEvent.press(
+    await screen.findByRole(
+      'button',
+      { name: 'Synthetic destination' },
+      { timeout: 3000 },
+    ),
+  );
+  expect(confirm).toHaveBeenCalledWith(trip.destination);
 });
 test('share URLs use a bearer fragment; revocation stays available even if no local grant is retained', async () => {
   const url = new URL(

@@ -1,26 +1,36 @@
 import type { StyleSpecification } from 'maplibre-gl';
 
-// OpenStreetMap raster tiles: free, no key. The public tile server suits
-// development and demonstration; point EXPO_PUBLIC_MAP_TILE_URL at another
-// {z}/{x}/{y} source for heavier use. Attribution must stay visible.
-export const tileUrl = () =>
-  process.env.EXPO_PUBLIC_MAP_TILE_URL ||
-  'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+// Map look and tiles. By default this is OpenFreeMap's "Positron" style:
+// a clean, light basemap built from OpenStreetMap data, free with no key,
+// registration or request limits. The style carries its own attribution.
+//
+// The public tile.openstreetmap.org server is not used: its usage policy
+// forbids apps from relying on it, and it answers such apps with
+// "Access blocked" tiles.
+//
+// EXPO_PUBLIC_MAP_STYLE_URL swaps in another MapLibre style URL.
+// EXPO_PUBLIC_MAP_TILE_URL (a raster {z}/{x}/{y} source) still works for
+// a self-hosted or paid tile server.
+export const defaultStyleUrl = 'https://tiles.openfreemap.org/styles/positron';
 
-export const osmAttribution = '© OpenStreetMap contributors';
+export const osmAttribution =
+  '© OpenFreeMap © OpenMapTiles · Data © OpenStreetMap contributors';
 
-export function osmStyle(): StyleSpecification {
-  return {
-    version: 8,
-    sources: {
-      osm: {
-        type: 'raster',
-        tiles: [tileUrl()],
-        tileSize: 256,
-        maxzoom: 19,
-        attribution: osmAttribution,
+export function osmStyle(): string | StyleSpecification {
+  const raster = process.env.EXPO_PUBLIC_MAP_TILE_URL;
+  if (raster)
+    return {
+      version: 8,
+      sources: {
+        tiles: {
+          type: 'raster',
+          tiles: [raster],
+          tileSize: 256,
+          maxzoom: 19,
+          attribution: '© OpenStreetMap contributors',
+        },
       },
-    },
-    layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
-  };
+      layers: [{ id: 'tiles', type: 'raster', source: 'tiles' }],
+    };
+  return process.env.EXPO_PUBLIC_MAP_STYLE_URL || defaultStyleUrl;
 }

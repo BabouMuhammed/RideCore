@@ -45,6 +45,8 @@ export type RideRequest = {
   currency: string;
   vehicleType: Category;
   requestedAt: string;
+  /** When the request closes if no driver accepts it. */
+  requestExpiresAt?: string;
 };
 export type VehicleInput = Omit<DriverVehicle, 'verificationStatus'>;
 export type TripAction = 'arriving' | 'arrived' | 'start' | 'complete';
@@ -62,7 +64,8 @@ const num = (value: unknown) => {
   return value;
 };
 const str = (value: unknown) => {
-  if (typeof value !== 'string' || !value.trim()) throw new AppError('contract');
+  if (typeof value !== 'string' || !value.trim())
+    throw new AppError('contract');
   return value;
 };
 function oneOf<T extends string>(value: unknown, allowed: readonly string[]) {
@@ -78,8 +81,14 @@ function profile(value: unknown): DriverProfile | null {
     ? coordinate(record(v.currentLocation).coordinates)
     : null;
   return {
-    verificationStatus: oneOf<Verification>(v.verificationStatus, verifications),
-    availabilityStatus: oneOf<Availability>(v.availabilityStatus, availabilities),
+    verificationStatus: oneOf<Verification>(
+      v.verificationStatus,
+      verifications,
+    ),
+    availabilityStatus: oneOf<Availability>(
+      v.availabilityStatus,
+      availabilities,
+    ),
     licenseNumber: typeof v.licenseNumber === 'string' ? v.licenseNumber : null,
     ratingAverage: typeof v.ratingAverage === 'number' ? v.ratingAverage : 0,
     ratingCount: typeof v.ratingCount === 'number' ? v.ratingCount : 0,
@@ -97,7 +106,10 @@ function vehicle(value: unknown): DriverVehicle | null {
     plateNumber: str(v.plateNumber),
     vehicleType: oneOf<Category>(v.vehicleType, categories),
     seats: num(v.seats),
-    verificationStatus: oneOf<Verification>(v.verificationStatus, verifications),
+    verificationStatus: oneOf<Verification>(
+      v.verificationStatus,
+      verifications,
+    ),
   };
 }
 function request(value: unknown): RideRequest {
@@ -111,6 +123,10 @@ function request(value: unknown): RideRequest {
     currency: str(v.currency),
     vehicleType: oneOf<Category>(v.vehicleType, categories),
     requestedAt: str(v.requestedAt),
+    ...(typeof v.requestExpiresAt === 'string' &&
+    Number.isFinite(Date.parse(v.requestExpiresAt))
+      ? { requestExpiresAt: v.requestExpiresAt }
+      : {}),
   };
 }
 /** The rider's first name, as the backend shares it with the assigned driver. */
@@ -121,10 +137,7 @@ export function riderName(ride: Trip): string | null {
   return typeof name === 'string' && name.trim() ? name : null;
 }
 
-export function createDriverApi(
-  baseUrl = apiUrl(),
-  fetcher?: ApiFetch,
-) {
+export function createDriverApi(baseUrl = apiUrl(), fetcher?: ApiFetch) {
   const call = createTransport(baseUrl, fetcher);
   type Signal = AbortSignal | undefined;
   return {
@@ -134,7 +147,11 @@ export function createDriverApi(
       );
       return { profile: profile(data.profile), vehicle: vehicle(data.vehicle) };
     },
-    saveLicense: async (token: string, licenseNumber: string, signal?: Signal) =>
+    saveLicense: async (
+      token: string,
+      licenseNumber: string,
+      signal?: Signal,
+    ) =>
       profile(
         await call('/drivers/profile', 'PUT', { licenseNumber }, token, signal),
       ),
@@ -181,7 +198,13 @@ export function createDriverApi(
     ride: async (token: string, rideId: string, signal?: Signal) =>
       trip(await call('/rides/' + id(rideId), 'GET', undefined, token, signal)),
     accept: async (token: string, rideId: string, signal?: Signal) => {
-      await call(`/rides/${id(rideId)}/accept`, 'PATCH', undefined, token, signal);
+      await call(
+        `/rides/${id(rideId)}/accept`,
+        'PATCH',
+        undefined,
+        token,
+        signal,
+      );
     },
     progress: async (
       token: string,
@@ -189,10 +212,27 @@ export function createDriverApi(
       action: TripAction,
       signal?: Signal,
     ) => {
-      await call(`/rides/${id(rideId)}/${action}`, 'PATCH', undefined, token, signal);
+      await call(
+        `/rides/${id(rideId)}/${action}`,
+        'PATCH',
+        undefined,
+        token,
+        signal,
+      );
     },
-    cancel: async (token: string, rideId: string, reason: string, signal?: Signal) => {
-      await call(`/rides/${id(rideId)}/cancel`, 'PATCH', { reason }, token, signal);
+    cancel: async (
+      token: string,
+      rideId: string,
+      reason: string,
+      signal?: Signal,
+    ) => {
+      await call(
+        `/rides/${id(rideId)}/cancel`,
+        'PATCH',
+        { reason },
+        token,
+        signal,
+      );
     },
     rate: async (
       token: string,
