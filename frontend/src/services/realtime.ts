@@ -149,7 +149,9 @@ export function connectDriverRide(
         rideId,
         latitude,
         longitude,
-        ...(heading != null && heading >= 0 && heading < 360 ? { heading } : {}),
+        ...(heading != null && heading >= 0 && heading < 360
+          ? { heading }
+          : {}),
         ...(speed != null && speed >= 0 && speed <= 100 ? { speed } : {}),
       });
     },
@@ -160,3 +162,27 @@ export function connectDriverRide(
     },
   };
 }
+
+export type RequestWatcher = (token: string, changed: () => void) => () => void;
+/**
+ * While a driver is online, the server pushes "requests:changed" the moment
+ * a ride is requested, taken, cancelled or expires, so the request list is
+ * refetched at once instead of waiting for the next poll. The push carries
+ * no ride data; the REST list stays the source of truth.
+ */
+export const watchDriverRequests: RequestWatcher = (token, changed) => {
+  const socket = io(socketOrigin(), {
+    auth: { token },
+    forceNew: true,
+    autoConnect: false,
+    timeout: 10000,
+  });
+  socket.on('requests:changed', () => changed());
+  // Anything missed while disconnected is picked up on reconnect.
+  socket.on('connect', () => changed());
+  socket.connect();
+  return () => {
+    socket.removeAllListeners();
+    socket.disconnect();
+  };
+};

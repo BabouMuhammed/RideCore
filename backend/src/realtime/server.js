@@ -8,7 +8,7 @@ import {
 } from "../services/tracking.js";
 import { ApiError } from "../utils/errors.js";
 import { roomInput, trackingInput } from "./schemas.js";
-import { rideEvents } from "./ride-events.js";
+import { rideEvents, requestEvents } from "./ride-events.js";
 import { parseOrigins } from "../config/env.js";
 const room = (id) => `ride:${id.toLowerCase()}`;
 export function attachRealtime(
@@ -77,6 +77,8 @@ export function attachRealtime(
       Math.min(expiryMs, 2147483647),
     ).unref();
     socket.on("disconnect", () => clearTimeout(expiryTimer));
+    // Drivers hear about new or closed ride requests the moment they happen.
+    if (identity.user.role === "driver") socket.join("drivers");
     const handler = (schema, action) => async (payload, acknowledge) => {
       const reply = typeof acknowledge === "function" ? acknowledge : () => {};
       try {
@@ -148,8 +150,11 @@ export function attachRealtime(
       .catch(() => console.error("Realtime notification failed"));
   };
   rideEvents.on("change", changed);
+  const requestsChanged = () => io.to("drivers").emit("requests:changed", {});
+  requestEvents.on("changed", requestsChanged);
   httpServer.once("close", () => {
     rideEvents.off("change", changed);
+    requestEvents.off("changed", requestsChanged);
     clearInterval(cleanRates);
     rateWindows.clear();
   });

@@ -10,7 +10,11 @@ import { AppState } from 'react-native';
 import * as Location from 'expo-location';
 import { useSession } from '../session/SessionProvider';
 import { createDriverApi } from '../../services/driver-api';
-import { connectDriverRide } from '../../services/realtime';
+import {
+  connectDriverRide,
+  watchDriverRequests,
+  type RequestWatcher,
+} from '../../services/realtime';
 import { DriverController, isActiveRide } from './DriverController';
 
 export type GpsStatus = 'starting' | 'watching' | 'denied' | 'unavailable';
@@ -24,7 +28,12 @@ const Context = createContext<Value | null>(null);
 export function DriverProvider({
   children,
   controller: provided,
-}: PropsWithChildren<{ controller?: DriverController }>) {
+  watchRequests = watchDriverRequests,
+}: PropsWithChildren<{
+  controller?: DriverController;
+  /** Test hook: how online drivers hear about new requests instantly. */
+  watchRequests?: RequestWatcher;
+}>) {
   const { session } = useSession();
   const [controller] = useState(
     () =>
@@ -66,6 +75,31 @@ export function DriverProvider({
       controller.dispose();
     };
   }, [controller]);
+
+  // While online, new requests are pushed the moment a rider books, so the
+  // driver sees them within a second rather than at the next poll.
+  const online = useSyncExternalStore(
+    controller.subscribe,
+    () => controller.online,
+    () => controller.online,
+  );
+  useEffect(() => {
+    if (!online) return;
+    let close: (() => void) | undefined;
+    let cancelled = false;
+    void session
+      .run(async (token) => {
+        if (cancelled) return;
+        close = watchRequests(token, () => void controller.pollRequests());
+      })
+      .catch(() => {
+        // Polling still finds requests if the live connection can't start.
+      });
+    return () => {
+      cancelled = true;
+      close?.();
+    };
+  }, [online, controller, session, watchRequests]);
 
   // Foreground GPS only, while the app is open. The driver can also set
   // their position by tapping the map when GPS is off or unavailable.

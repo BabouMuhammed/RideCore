@@ -1,6 +1,9 @@
 import { endRideShares } from "./share-lifecycle.js";
 import { publishShareEnded } from "../realtime/share-events.js";
-import { publishRideChange } from "../realtime/ride-events.js";
+import {
+  publishRequestsChanged,
+  publishRideChange,
+} from "../realtime/ride-events.js";
 import mongoose from "mongoose";
 import { Ride, DriverProfile, User } from "../models/index.js";
 import { requireThat } from "../utils/errors.js";
@@ -45,6 +48,7 @@ export async function expireStaleRequests(now = new Date()) {
       publishRideChange(ride);
     }
   }
+  if (expired) publishRequestsChanged();
   return expired;
 }
 export async function createRide(
@@ -53,7 +57,7 @@ export async function createRide(
   timeoutSeconds = defaultTimeoutSeconds,
 ) {
   const estimate = estimateFare(input);
-  return mongoose.connection.transaction(async (session) => {
+  const created = await mongoose.connection.transaction(async (session) => {
     const active = await User.findOneAndUpdate(
       { _id: user._id, isActive: true },
       { $inc: { __v: 1 } },
@@ -76,6 +80,8 @@ export async function createRide(
     );
     return ride;
   });
+  publishRequestsChanged();
+  return created;
 }
 export async function getRide(id, user, session) {
   const ride = await Ride.findById(id).session(session || null);
@@ -136,6 +142,7 @@ export async function acceptRide(id, user, radiusKm) {
     return ride;
   });
   publishRideChange(result);
+  publishRequestsChanged();
   return result;
 }
 export async function progressRide(id, user, action) {
@@ -205,9 +212,14 @@ export async function cancelRide(id, user, reason) {
         { session },
       );
     const shareKeys = await endRideShares(id, "ride_cancelled", session);
-    return { ride: changed, shareKeys };
+    return {
+      ride: changed,
+      shareKeys,
+      wasRequested: ride.status === "requested",
+    };
   });
   publishRideChange(result.ride);
+  if (result.wasRequested) publishRequestsChanged();
   for (const key of result.shareKeys) publishShareEnded(key, "ride_cancelled");
   return result.ride;
 }

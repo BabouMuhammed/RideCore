@@ -424,3 +424,37 @@ describe("authoritative REST ride-state notifications", () => {
     expect((await join(rider, ride._id)).error.status).toBe(409);
   });
 });
+
+describe("instant ride request notifications", () => {
+  it("nudges connected drivers the moment a ride is requested, taken or cancelled", async () => {
+    const driver = await connected("driver");
+    const rider = await connected("rider");
+    let riderHeard = false;
+    rider.on("requests:changed", () => (riderHeard = true));
+
+    const created = event(driver, "requests:changed", 2000);
+    const ride = await createRide();
+    expect(await created).toEqual({});
+
+    const taken = event(driver, "requests:changed", 2000);
+    expect(
+      (await api("driver2", "patch", `/api/rides/${ride._id}/accept`)).status,
+    ).toBe(200);
+    await taken;
+    expect(riderHeard).toBe(false);
+  });
+
+  it("nudges drivers when a waiting request is cancelled", async () => {
+    const ride = await createRide();
+    const driver = await connected("driver");
+    const cancelled = event(driver, "requests:changed", 2000);
+    expect(
+      (
+        await api("rider", "patch", `/api/rides/${ride._id}/cancel`, {
+          reason: "Changed plans",
+        })
+      ).status,
+    ).toBe(200);
+    await cancelled;
+  });
+});

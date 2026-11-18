@@ -1,5 +1,9 @@
 import { io } from 'socket.io-client';
-import { watchRide, rideEvents } from '../src/services/realtime';
+import {
+  watchRide,
+  rideEvents,
+  watchDriverRequests,
+} from '../src/services/realtime';
 jest.mock('socket.io-client', () => ({
   io: jest.fn(() => {
     const handlers = new Map<string, (...args: unknown[]) => void>();
@@ -111,4 +115,25 @@ test('server disconnection triggers authoritative credential/status recovery wit
   expect(h.handlers.changed).toHaveBeenCalledTimes(1);
   h.socket.handlers.get('connect_error')!({ data: { status: 401 } });
   expect(h.handlers.changed).toHaveBeenCalledTimes(2);
+});
+test('online drivers refetch requests the instant the server says they changed', () => {
+  const changed = jest.fn();
+  const close = watchDriverRequests('test-only-credential', changed);
+  const socket = jest.mocked(io).mock.results[0]!.value as unknown as {
+    handlers: Map<string, (...args: unknown[]) => void>;
+    connect: jest.Mock;
+    disconnect: jest.Mock;
+  };
+  expect(io).toHaveBeenCalledWith(
+    'https://api.example.test',
+    expect.objectContaining({ auth: { token: 'test-only-credential' } }),
+  );
+  expect(socket.connect).toHaveBeenCalled();
+  socket.handlers.get('requests:changed')!({});
+  expect(changed).toHaveBeenCalledTimes(1);
+  // A reconnect also refetches, covering anything missed meanwhile.
+  socket.handlers.get('connect')!();
+  expect(changed).toHaveBeenCalledTimes(2);
+  close();
+  expect(socket.disconnect).toHaveBeenCalled();
 });

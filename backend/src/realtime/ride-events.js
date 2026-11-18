@@ -16,3 +16,12 @@ export function publishRideChange(ride) {
     timestamp: new Date(ride.updatedAt).toISOString(),
   });
 }
+
+// Open ride requests changed (one was created, taken, cancelled or expired).
+// Online drivers are nudged to refetch their request list straight away;
+// the nudge carries no ride data, and the REST list still applies each
+// driver's eligibility and search radius.
+export const requestEvents = new EventEmitter();
+export function publishRequestsChanged() {
+  requestEvents.emit("changed");
+}
