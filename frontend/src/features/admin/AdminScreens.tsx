@@ -272,7 +272,8 @@ export function AdminDriversScreen() {
     <AdminPage title="Drivers">
       <Text tone="secondary">
         Review self-reported details. Both profile and vehicle approval are
-        needed to drive.
+        needed to drive. Approved drivers stay offline until they tap Go online
+        in their own app.
       </Text>
       <ActionFeedback actions={actions} />
       <DataState {...resource} empty={resource.data?.length === 0}>
@@ -319,12 +320,19 @@ export function AdminDriversScreen() {
                 <Field label="Licence number" value={driver.licenseNumber} />
                 <Field label="Driver account ID" value={driver.user} />
                 <Text variant="label">Profile decision</Text>
+                <Text tone="secondary">
+                  {decisionHint('Profile', driver.verificationStatus)}
+                </Text>
                 {(['approved', 'rejected', 'suspended'] as const).map(
                   (status) => (
                     <Button
                       key={status}
                       variant="secondary"
-                      label={`${status === 'approved' ? 'Approve' : status === 'rejected' ? 'Reject' : 'Suspend'} profile`}
+                      label={decisionLabel(
+                        'profile',
+                        status,
+                        driver.verificationStatus,
+                      )}
                       disabled={
                         actions.busy ||
                         !driver.account ||
@@ -357,12 +365,22 @@ export function AdminDriversScreen() {
                       label="Category / seats"
                       value={`${driver.vehicle.vehicleType ?? 'Unknown'} · ${driver.vehicle.seats ?? 'Unknown'} seats`}
                     />
+                    <Text tone="secondary">
+                      {decisionHint(
+                        'Vehicle',
+                        driver.vehicle.verificationStatus,
+                      )}
+                    </Text>
                     {(['approved', 'rejected', 'suspended'] as const).map(
                       (status) => (
                         <Button
                           key={status}
                           variant="secondary"
-                          label={`${status === 'approved' ? 'Approve' : status === 'rejected' ? 'Reject' : 'Suspend'} vehicle`}
+                          label={decisionLabel(
+                            'vehicle',
+                            status,
+                            driver.vehicle!.verificationStatus,
+                          )}
                           disabled={
                             actions.busy ||
                             !driver.account ||
@@ -374,7 +392,10 @@ export function AdminDriversScreen() {
                     )}
                   </>
                 ) : (
-                  <Text tone="secondary">No vehicle has been submitted.</Text>
+                  <Text tone="secondary">
+                    No vehicle has been submitted. The driver adds it in their
+                    app; it can be reviewed here afterwards.
+                  </Text>
                 )}
               </>
             )}
@@ -626,3 +647,30 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
   },
 });
+
+// The button for a record's current decision can't be pressed again, so it
+// names the current state instead of an action, and a hint says what to do.
+const decisionVerbs = {
+  approved: ['Approve', 'approved'],
+  rejected: ['Reject', 'rejected'],
+  suspended: ['Suspend', 'suspended'],
+} as const;
+export function decisionLabel(
+  thing: 'profile' | 'vehicle',
+  status: keyof typeof decisionVerbs,
+  current?: string,
+) {
+  const [verb, past] = decisionVerbs[status];
+  return current === status
+    ? `${thing === 'profile' ? 'Profile' : 'Vehicle'} ${past} (current)`
+    : `${verb} ${thing}`;
+}
+export function decisionHint(thing: 'Profile' | 'Vehicle', current?: string) {
+  if (current === 'approved')
+    return `${thing} is approved. Choose Reject or Suspend to change it.`;
+  if (current === 'rejected')
+    return `${thing} was rejected. Approve it if the details are now correct.`;
+  if (current === 'suspended')
+    return `${thing} is suspended. Approve it to restore driving.`;
+  return `${thing} is waiting for a decision.`;
+}
