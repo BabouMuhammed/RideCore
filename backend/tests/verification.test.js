@@ -252,7 +252,8 @@ describe("public registration through completed ride end-to-end", () => {
     expect(driver.body.data.profile).toMatchObject({
       ratingAverage: 5,
       ratingCount: 1,
-      availabilityStatus: "offline",
+      // Back online for the next ride after completing this one.
+      availabilityStatus: "online",
     });
   });
 });

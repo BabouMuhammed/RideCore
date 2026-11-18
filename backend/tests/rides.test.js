@@ -170,10 +170,11 @@ describe("ride lifecycle and conflicts", () => {
     expect(ride.completedAt).toBeInstanceOf(Date);
     expect(ride.finalFare).toBe(ride.estimatedFare);
     expect(ride.active).toBe(false);
+    // Ready for the next ride straight away.
     expect(
       (await DriverProfile.findById(actors.driver.profile._id))
         .availabilityStatus,
-    ).toBe("offline");
+    ).toBe("online");
     expect((await api("rider", "post", "/api/rides", rideInput)).status).toBe(
       201,
     );
@@ -219,6 +220,20 @@ describe("ride lifecycle and conflicts", () => {
       (await DriverProfile.findById(actors.driver.profile._id))
         .availabilityStatus,
     ).toBe("offline");
+  });
+  it("keeps the driver online when the rider cancels an accepted ride", async () => {
+    const ride = await acceptedRide();
+    expect(
+      (
+        await api("rider", "patch", `/api/rides/${ride._id}/cancel`, {
+          reason: "Plans changed",
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await DriverProfile.findById(actors.driver.profile._id))
+        .availabilityStatus,
+    ).toBe("online");
   });
   it("blocks cancellation after start and after completion", async () => {
     const ride = await acceptedRide();

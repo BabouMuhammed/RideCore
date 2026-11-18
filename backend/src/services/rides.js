@@ -155,6 +155,29 @@ export async function acceptRide(id, user, radiusKm) {
   void notifyRideChange(result, user._id).catch(() => undefined);
   return result;
 }
+// Ends a driver's "busy" state. Only an approved driver goes back online.
+async function freeDriver(driverId, wanted, session) {
+  await DriverProfile.updateOne(
+    { user: driverId },
+    [
+      {
+        $set: {
+          availabilityStatus:
+            wanted === "online"
+              ? {
+                  $cond: [
+                    { $eq: ["$verificationStatus", "approved"] },
+                    "online",
+                    "offline",
+                  ],
+                }
+              : "offline",
+        },
+      },
+    ],
+    { session, updatePipeline: true },
+  );
+}
 export async function progressRide(id, user, action) {
   const [from, to, timestamp] = transitions[action];
   const result = await mongoose.connection.transaction(async (session) => {
@@ -177,12 +200,8 @@ export async function progressRide(id, user, action) {
       { returnDocument: "after", session },
     );
     requireThat(changed, 409, "Ride changed; retry");
-    if (to === "completed")
-      await DriverProfile.updateOne(
-        { user: user._id },
-        { availabilityStatus: "offline" },
-        { session },
-      );
+    // After a trip the driver is ready for the next one, as on Uber.
+    if (to === "completed") await freeDriver(user._id, "online", session);
     const shareKeys =
       to === "completed"
         ? await endRideShares(id, "ride_completed", session)
@@ -216,11 +235,13 @@ export async function cancelRide(id, user, reason) {
       { returnDocument: "after", session },
     );
     requireThat(changed, 409, "Ride changed; retry");
+    // A rider cancelling doesn't take the driver off duty; a driver who
+    // cancels (car trouble, say) goes offline until they choose to return.
     if (ride.driver)
-      await DriverProfile.updateOne(
-        { user: ride.driver },
-        { availabilityStatus: "offline" },
-        { session },
+      await freeDriver(
+        ride.driver,
+        String(user._id) === String(ride.rider) ? "online" : "offline",
+        session,
       );
     const shareKeys = await endRideShares(id, "ride_cancelled", session);
     return {
