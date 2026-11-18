@@ -2,6 +2,7 @@ import { activeStatuses } from '../../services/contracts';
 import { AppError, safeError } from '../../services/errors';
 import type { Booking, JourneyApi, Trip } from '../../services/journey-api';
 import type { LocationSample, RideWatcher } from '../../services/realtime';
+import { canServe } from './presentation';
 export type Runner = <T>(
   work: (token: string, signal: AbortSignal) => Promise<T>,
 ) => Promise<T>;
@@ -107,8 +108,8 @@ export class JourneyController {
         this.state.trip.status === 'requested'
       )
         this.emit({
-          nearbyDrivers: categories.filter(
-            (category) => category === trip.vehicleType,
+          nearbyDrivers: categories.filter((category) =>
+            canServe(category, trip.vehicleType),
           ).length,
         });
     } catch {

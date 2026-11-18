@@ -10,7 +10,11 @@ import { Icon } from '../../../components/ui/Icon';
 import { ListRow } from '../../../components/ui/ListRow';
 import { Loading } from '../../../components/ui/Loading';
 import { TripProgress } from '../../journey/TripProgress';
-import { money, statusLabels } from '../../journey/presentation';
+import {
+  money,
+  requestTypesServedBy,
+  statusLabels,
+} from '../../journey/presentation';
 import { createMapService, initialCenter } from '../../../services/geo';
 import { riderName } from '../../../services/driver-api';
 import type { Coordinate } from '../../../services/journey-api';
@@ -46,6 +50,13 @@ export function gpsHint(gps: string) {
   if (gps === 'denied')
     return 'Location access is off for RideCore. Tap the map where you are, or allow location and tap Use my location. On iPhone: Settings › Privacy & Security › Location Services › Safari Websites.';
   return 'Your location isn’t available. Tap the map where you are to set your position, then go online.';
+}
+
+const typeNames = { economy: 'Economy', comfort: 'Comfort', xl: 'XL' } as const;
+// Tells the driver which requests reach them, so a mismatch is obvious.
+export function servedCopy(car: keyof typeof typeNames) {
+  const names = requestTypesServedBy[car].map((type) => typeNames[type]);
+  return `You receive ${names.join(' and ')} requests`;
 }
 
 export function DriveScreen() {
@@ -269,6 +280,11 @@ export function DriveScreen() {
         ) : online ? (
           <>
             <Text variant="heading">You’re online</Text>
+            {account?.vehicle && (
+              <Text variant="caption" tone="secondary">
+                {servedCopy(account.vehicle.vehicleType)}
+              </Text>
+            )}
             <Text tone="secondary">
               {requests.length
                 ? `${requests.length} ride request${requests.length === 1 ? '' : 's'} near you`

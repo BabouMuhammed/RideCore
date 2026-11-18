@@ -91,6 +91,8 @@ export const nearbyQuery = z
   .object({
     lat: z.string().trim().min(1).pipe(z.coerce.number().min(-90).max(90)),
     lng: z.string().trim().min(1).pipe(z.coerce.number().min(-180).max(180)),
+    // Count only drivers who can take this kind of request.
+    vehicleType: z.enum(["economy", "comfort", "xl"]).optional(),
   })
   .strict();
 export const otpRequest = z.object({}).strict();

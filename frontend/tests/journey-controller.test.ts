@@ -145,7 +145,9 @@ test('disposal drops late private state and closes socket work', async () => {
 });
 test('no-driver feedback uses only the backend category snapshot and leaves the request unassigned', async () => {
   const h = harness();
-  h.api.list.mockResolvedValue([trip]);
+  // An XL ride: a Comfort car nearby can't take it, so no drivers count.
+  h.api.list.mockResolvedValue([{ ...trip, vehicleType: 'xl' }]);
+  h.api.detail.mockResolvedValue({ ...trip, vehicleType: 'xl' });
   h.api.nearby.mockResolvedValue(['comfort']);
   await h.controller.refresh();
   await Promise.resolve();

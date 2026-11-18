@@ -9,6 +9,7 @@ import {
   createRide,
   acceptedRide,
   location,
+  rideInput,
 } from "./helpers.js";
 import { DriverProfile, User, Vehicle } from "../src/models/index.js";
 import { nearbyDrivers } from "../src/services/nearby.js";
@@ -213,11 +214,11 @@ describe("ride request proximity", () => {
     ).toBe(200);
   });
   it("does not show requests for the wrong vehicle type", async () => {
-    await createRide();
-    await Vehicle.updateOne(
-      { driver: actors.driver.user._id },
-      { vehicleType: "xl" },
-    );
+    // An Economy car can't take an XL request (bigger cars may take smaller).
+    await api("rider", "post", "/api/rides", {
+      ...rideInput,
+      vehicleType: "xl",
+    });
     expect(
       (await api("driver", "get", "/api/drivers/ride-requests")).body.data,
     ).toEqual([]);

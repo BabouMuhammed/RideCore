@@ -109,6 +109,7 @@ export const nearby = async (req, res) =>
     await drivers.nearbyDrivers(
       [req.queryInput.lng, req.queryInput.lat],
       req.app.locals.features.DRIVER_SEARCH_RADIUS_KM,
+      req.queryInput.vehicleType,
     ),
   );
 

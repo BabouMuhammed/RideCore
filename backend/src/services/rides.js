@@ -12,6 +12,7 @@ import { eligibleDriver } from "./drivers.js";
 import {
   defaultTimeoutSeconds,
   nearbyRideRequests,
+  requestTypesServedBy,
   openRequestFilter,
   pickupWithinRadius,
 } from "./nearby.js";
@@ -128,7 +129,11 @@ export async function acceptRide(id, user, radiusKm) {
         _id: id,
         status: "requested",
         ...openRequestFilter(),
-        vehicleType: vehicle.vehicleType,
+        vehicleType: {
+          $in: requestTypesServedBy[vehicle.vehicleType] ?? [
+            vehicle.vehicleType,
+          ],
+        },
         rider: { $ne: user._id },
         "pickup.location": pickupWithinRadius(
           profile.currentLocation.coordinates,

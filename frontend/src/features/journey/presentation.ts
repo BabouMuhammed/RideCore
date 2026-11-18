@@ -30,3 +30,20 @@ export const cancellationReasons = [
   'Wrong pickup/destination',
   'Other',
 ];
+
+// Bigger cars may take smaller requests (matches the server's rule): a
+// Comfort car can carry an Economy rider, an XL car any rider.
+export const requestTypesServedBy: Record<
+  Trip['vehicleType'],
+  Trip['vehicleType'][]
+> = {
+  economy: ['economy'],
+  comfort: ['economy', 'comfort'],
+  xl: ['economy', 'comfort', 'xl'],
+};
+export function canServe(
+  car: Trip['vehicleType'],
+  request: Trip['vehicleType'],
+) {
+  return requestTypesServedBy[car].includes(request);
+}

@@ -138,11 +138,12 @@ describe("ride lifecycle and conflicts", () => {
     ).toBe(403);
   });
   it("blocks incompatible vehicle acceptance", async () => {
-    const ride = await createRide();
-    await Vehicle.updateOne(
-      { driver: actors.driver.user._id },
-      { vehicleType: "xl" },
-    );
+    // A smaller car can't take a bigger request.
+    const r = await api("rider", "post", "/api/rides", {
+      ...rideInput,
+      vehicleType: "xl",
+    });
+    const ride = r.body.data;
     expect(
       (await api("driver", "patch", `/api/rides/${ride._id}/accept`)).status,
     ).toBe(409);

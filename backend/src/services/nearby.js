@@ -18,7 +18,19 @@ export function searchOrigin(coordinates) {
   requireThat(result.success, 400, "Invalid search coordinates");
   return result.data;
 }
-export async function nearbyDrivers(coordinates, radiusKm) {
+// Bigger cars may take smaller requests (as on Uber): a Comfort car can
+// carry an Economy rider, an XL car any rider. Never the other way round.
+export const requestTypesServedBy = {
+  economy: ["economy"],
+  comfort: ["economy", "comfort"],
+  xl: ["economy", "comfort", "xl"],
+};
+export function vehicleTypesServing(requestType) {
+  return Object.keys(requestTypesServedBy).filter((type) =>
+    requestTypesServedBy[type].includes(requestType),
+  );
+}
+export async function nearbyDrivers(coordinates, radiusKm, requestType) {
   const origin = searchOrigin(coordinates);
   const radius = searchRadius(radiusKm);
   return DriverProfile.aggregate([
@@ -50,7 +62,15 @@ export async function nearbyDrivers(coordinates, radiusKm) {
       },
     },
     { $unwind: "$vehicle" },
-    { $match: { "vehicle.verificationStatus": "approved" } },
+    {
+      $match: {
+        "vehicle.verificationStatus": "approved",
+        // Only drivers who can take this kind of request, when one is given.
+        ...(requestType && {
+          "vehicle.vehicleType": { $in: vehicleTypesServing(requestType) },
+        }),
+      },
+    },
     {
       $lookup: {
         from: "rides",
@@ -117,7 +137,9 @@ export async function nearbyRideRequests(profile, vehicle, radiusKm) {
     status: "requested",
     active: true,
     ...openRequestFilter(),
-    vehicleType: vehicle.vehicleType,
+    vehicleType: {
+      $in: requestTypesServedBy[vehicle.vehicleType] ?? [vehicle.vehicleType],
+    },
     "pickup.location": {
       $near: { $geometry: origin, $maxDistance: searchRadius(radiusKm) * 1000 },
     },
