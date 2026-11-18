@@ -41,7 +41,8 @@ function openDirections(point: Coordinate) {
 
 // Why "Go online" is waiting, and what the driver can do about it.
 export function gpsHint(gps: string) {
-  if (gps === 'starting') return 'Finding your location…';
+  if (gps === 'starting' || gps === 'watching')
+    return 'Finding your location… You can also tap the map where you are.';
   if (gps === 'denied')
     return 'Location access is off for RideCore. Tap the map where you are, or allow location and tap Use my location. On iPhone: Settings › Privacy & Security › Location Services › Safari Websites.';
   return 'Your location isn’t available. Tap the map where you are to set your position, then go online.';
@@ -112,7 +113,6 @@ export function DriveScreen() {
     return <Loading label="Loading your driver account" />;
   if (!approved) return <DriverOnboarding />;
 
-  const canPickOnMap = gps !== 'watching';
   const next = active && ride ? nextAction(ride.status) : null;
   const target =
     ride && ride.status === 'in_progress' ? ride.destination : ride?.pickup;
@@ -124,7 +124,10 @@ export function DriveScreen() {
         pins={pins}
         route={route}
         onSelect={
-          canPickOnMap && !active
+          // Tapping the map always works off-trip: phones can grant location
+          // but take a long time (or never) to report it, e.g. in a
+          // home-screen web app.
+          !active
             ? (point) => controller.updateLocation(point, 'map')
             : undefined
         }
@@ -309,7 +312,7 @@ export function DriveScreen() {
                 onPress={retryGps}
               />
             )}
-            {location && canPickOnMap && (
+            {location && state.locationSource === 'map' && (
               <Text variant="caption" tone="secondary">
                 Position set on the map. Tap again to move it.
               </Text>

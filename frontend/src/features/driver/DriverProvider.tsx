@@ -81,6 +81,19 @@ export function DriverProvider({
           setGps('denied');
           return;
         }
+        // A quick, coarse first fix so the driver isn't kept waiting for
+        // high-accuracy GPS. Failure here is fine; the watch continues.
+        void Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        })
+          .then((position) => {
+            if (!cancelled && !controller.getSnapshot().location)
+              controller.updateLocation(
+                [position.coords.longitude, position.coords.latitude],
+                'gps',
+              );
+          })
+          .catch(() => undefined);
         subscription = await Location.watchPositionAsync(
           {
             accuracy: Location.Accuracy.High,
