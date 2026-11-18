@@ -8,6 +8,7 @@ import * as admin from "../services/admin.js";
 import { estimateFare } from "../services/pricing.js";
 import { DriverProfile, Vehicle, Ride, Payment } from "../models/index.js";
 import { requireThat } from "../utils/errors.js";
+import * as push from "../services/push.js";
 const send = (res, data, status = 200) =>
   res.status(status).json({ success: true, data });
 export const adminOverview = async (req, res) =>
@@ -125,3 +126,14 @@ export const verifyOtp = async (req, res) =>
     res,
     await otp.verifyPhoneOtp(req.user._id, req.input.code, otpOptions(req)),
   );
+
+export const pushPublicKey = async (req, res) =>
+  send(res, { publicKey: (await push.vapidKeys()).publicKey });
+export const pushSubscribe = async (req, res) => {
+  await push.saveSubscription(req.user, req.input);
+  send(res, { subscribed: true }, 201);
+};
+export const pushUnsubscribe = async (req, res) => {
+  await push.removeSubscription(req.user, req.input.endpoint);
+  send(res, { subscribed: false });
+};

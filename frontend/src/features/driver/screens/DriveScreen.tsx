@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapCanvas } from '../../map/MapCanvas';
@@ -25,6 +25,8 @@ import { DriverOnboarding } from './DriverOnboarding';
 import { RequestCard } from '../components/RequestCard';
 import { RateRider } from '../components/RateRider';
 import { DriverCancel } from '../components/DriverCancel';
+import { NotificationsCard } from '../../notifications/NotificationsCard';
+import { alertRider } from '../../notifications/alertSound';
 
 const driverStatusLabels: Partial<Record<string, string>> = {
   accepted: 'Ride accepted',
@@ -61,6 +63,12 @@ export function servedCopy(car: keyof typeof typeNames) {
 
 export function DriveScreen() {
   const { controller, gps, retryGps, state } = useDriver();
+  // A chime (and vibration where supported) when a new request arrives.
+  const requestCount = useRef(0);
+  useEffect(() => {
+    if (state.requests.length > requestCount.current) alertRider('soft');
+    requestCount.current = state.requests.length;
+  }, [state.requests.length]);
   const insets = useSafeAreaInsets();
   const [maps] = useState(() => createMapService());
   const [planned, setPlanned] = useState<{
@@ -280,6 +288,7 @@ export function DriveScreen() {
         ) : online ? (
           <>
             <Text variant="heading">You’re online</Text>
+            <NotificationsCard role="driver" />
             {account?.vehicle && (
               <Text variant="caption" tone="secondary">
                 {servedCopy(account.vehicle.vehicleType)}

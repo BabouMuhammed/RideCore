@@ -22,7 +22,9 @@ export const transitions = Object.freeze({
   start: ["driver_arrived", "in_progress", "startedAt"],
   complete: ["in_progress", "completed", "completedAt"],
 });
-export const noDriverFound = "no_driver_found";
+export { noDriverFoundReason as noDriverFound } from "./nearby.js";
+import { noDriverFoundReason as noDriverFound } from "./nearby.js";
+import { notifyNewRequest, notifyRideChange } from "./ride-notifications.js";
 // Close requests nobody accepted in time and tell the rider over realtime.
 export async function expireStaleRequests(now = new Date()) {
   const stale = await Ride.find({
@@ -47,6 +49,7 @@ export async function expireStaleRequests(now = new Date()) {
     if (ride) {
       expired++;
       publishRideChange(ride);
+      void notifyRideChange(ride).catch(() => undefined);
     }
   }
   if (expired) publishRequestsChanged();
@@ -82,6 +85,7 @@ export async function createRide(
     return ride;
   });
   publishRequestsChanged();
+  void notifyNewRequest(created).catch(() => undefined);
   return created;
 }
 export async function getRide(id, user, session) {
@@ -148,6 +152,7 @@ export async function acceptRide(id, user, radiusKm) {
   });
   publishRideChange(result);
   publishRequestsChanged();
+  void notifyRideChange(result, user._id).catch(() => undefined);
   return result;
 }
 export async function progressRide(id, user, action) {
@@ -185,6 +190,7 @@ export async function progressRide(id, user, action) {
     return { ride: changed, shareKeys };
   });
   publishRideChange(result.ride);
+  void notifyRideChange(result.ride, user._id).catch(() => undefined);
   for (const key of result.shareKeys) publishShareEnded(key, "ride_completed");
   return result.ride;
 }
@@ -225,6 +231,7 @@ export async function cancelRide(id, user, reason) {
   });
   publishRideChange(result.ride);
   if (result.wasRequested) publishRequestsChanged();
+  void notifyRideChange(result.ride, user._id).catch(() => undefined);
   for (const key of result.shareKeys) publishShareEnded(key, "ride_cancelled");
   return result.ride;
 }

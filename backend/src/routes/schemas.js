@@ -101,3 +101,20 @@ export const otpVerification = z
   .strict();
 
 export const shareCreation = z.object({}).strict().default({});
+
+// A Web Push subscription as the browser's PushManager produces it.
+export const pushSubscription = z
+  .object({
+    endpoint: z.string().url().startsWith("https://").max(1000),
+    keys: z
+      .object({
+        p256dh: z.string().min(1).max(200),
+        auth: z.string().min(1).max(100),
+      })
+      .strict(),
+    expirationTime: z.number().nullable().optional(),
+  })
+  .strict();
+export const pushUnsubscribe = z
+  .object({ endpoint: z.string().url().max(1000) })
+  .strict();

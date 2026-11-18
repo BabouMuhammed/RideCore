@@ -32,6 +32,7 @@ import Navigation from 'lucide-react-native/icons/navigation';
 import Power from 'lucide-react-native/icons/power';
 import Wallet from 'lucide-react-native/icons/wallet';
 import Plane from 'lucide-react-native/icons/plane';
+import Bell from 'lucide-react-native/icons/bell';
 import ShoppingBasket from 'lucide-react-native/icons/shopping-basket';
 import TreePalm from 'lucide-react-native/icons/tree-palm';
 import Hospital from 'lucide-react-native/icons/hospital';
@@ -42,6 +43,7 @@ import type { LucideIcon } from 'lucide-react-native';
 import { Platform } from 'react-native';
 import { colors, size as sizes } from '../../theme/tokens';
 const icons = {
+  bell: Bell,
   plane: Plane,
   market: ShoppingBasket,
   beach: TreePalm,

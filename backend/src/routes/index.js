@@ -128,5 +128,21 @@ export function apiRoutes(features) {
     c.active,
   );
   api.use("/admin", admin);
+  // Lock-screen notifications (Web Push).
+  const pushRoutes = Router();
+  pushRoutes.get("/public-key", c.pushPublicKey);
+  pushRoutes.post(
+    "/subscriptions",
+    authenticate,
+    validate(s.pushSubscription),
+    c.pushSubscribe,
+  );
+  pushRoutes.delete(
+    "/subscriptions",
+    authenticate,
+    validate(s.pushUnsubscribe),
+    c.pushUnsubscribe,
+  );
+  api.use("/push", pushRoutes);
   return api;
 }

@@ -34,6 +34,7 @@ import type {
 import type { MapPin } from '../../map/MapCanvas.types';
 import { PlaceTiles } from '../../places/PlaceTiles';
 import { landmarks } from '../../places/landmarks';
+import { NotificationsCard } from '../../notifications/NotificationsCard';
 
 export const rideOptions: {
   category: Category;
@@ -174,6 +175,7 @@ export function RiderHome({
 
       <View style={styles.recent}>
         <View style={styles.inner}>
+          <NotificationsCard role="rider" />
           {places.length > 0 && (
             <>
               <Text style={styles.sectionHeading} accessibilityRole="header">

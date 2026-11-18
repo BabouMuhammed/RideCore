@@ -8,6 +8,7 @@ import type {
 } from '../../services/contracts';
 import { activeStatuses } from '../../services/contracts';
 import { AppError, safeError } from '../../services/errors';
+import { unlinkPush } from '../../services/push';
 export type SessionState =
   | { stage: 'starting' | 'restoring' }
   | { stage: 'anonymous'; expired?: boolean }
@@ -182,6 +183,8 @@ export class SessionController {
   }
   async logout() {
     const epoch = this.begin();
+    // This device stops receiving the account's notifications.
+    if (this.token) void unlinkPush(this.token);
     this.token = null;
     this.emit({ stage: 'restoring' });
     await this.forget(epoch);

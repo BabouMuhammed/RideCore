@@ -6,6 +6,8 @@ import { Vehicle } from "./Vehicle.js";
 import { Ride } from "./Ride.js";
 import { Payment } from "./Payment.js";
 import { Rating } from "./Rating.js";
+import { PushSubscription } from "./PushSubscription.js";
+import { AppSetting } from "./AppSetting.js";
 export {
   User,
   DriverProfile,
@@ -15,6 +17,8 @@ export {
   Rating,
   PhoneOtp,
   RideShare,
+  PushSubscription,
+  AppSetting,
 };
 export const models = [
   User,
@@ -25,4 +29,6 @@ export const models = [
   Rating,
   PhoneOtp,
   RideShare,
+  PushSubscription,
+  AppSetting,
 ];

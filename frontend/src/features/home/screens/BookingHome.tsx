@@ -50,6 +50,7 @@ import {
   size,
   space,
 } from '../../../theme/tokens';
+import { TripAlert } from '../../notifications/TripAlert';
 
 export function BookingHome({
   service,
@@ -444,6 +445,7 @@ export function BookingHome({
           <Wordmark size={16} />
         )}
       </View>
+      <TripAlert trip={trip} top={insets.top + 72} />
       <JourneySheet onHeight={setSheetHeight}>
         {state.loading ? (
           <Loading label="Restoring your journey" />
