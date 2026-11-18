@@ -73,7 +73,11 @@ export async function requestPhoneOtp(
     return true;
   });
   const delivery = generated
-    ? await deliverPhoneOtp({ code, runtimeMode })
+    ? await deliverPhoneOtp({
+        code,
+        runtimeMode,
+        mockDelivery: settings.OTP_MOCK_DELIVERY,
+      })
     : {};
   return {
     message: "If verification is needed, a mock code has been generated",

@@ -24,6 +24,7 @@ try {
     corsOrigin: env.CORS_ORIGIN,
     features: readFeatureSettings(env),
     runtimeMode: env.NODE_ENV,
+    trustProxy: env.TRUST_PROXY,
   }));
   server.listen(env.PORT);
   server.once("listening", () => {

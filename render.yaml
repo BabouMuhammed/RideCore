@@ -1,0 +1,30 @@
+# Render Blueprint for the RideCore API.
+# In Render: New > Blueprint, pick this repository, then fill in the
+# variables marked sync: false (they are secrets and never live in git).
+services:
+  - type: web
+    name: ridecore-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"
+      # No SMS provider is connected; show verification codes in the app.
+      - key: OTP_MOCK_DELIVERY
+        value: "true"
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      # The web app's address, e.g. https://ridecore.vercel.app
+      - key: CORS_ORIGIN
+        sync: false

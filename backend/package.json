@@ -41,5 +41,8 @@
     "mongodbMemoryServer": {
       "disablePostinstall": true
     }
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

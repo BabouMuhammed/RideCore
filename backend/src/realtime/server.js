@@ -9,16 +9,18 @@ import {
 import { ApiError } from "../utils/errors.js";
 import { roomInput, trackingInput } from "./schemas.js";
 import { rideEvents } from "./ride-events.js";
+import { parseOrigins } from "../config/env.js";
 const room = (id) => `ride:${id.toLowerCase()}`;
 export function attachRealtime(
   httpServer,
   { jwtSecret, corsOrigin, features },
 ) {
+  const origins = parseOrigins(corsOrigin);
   const io = new Server(httpServer, {
-    cors: { origin: corsOrigin },
+    cors: { origin: origins },
     maxHttpBufferSize: 8192,
     allowRequest: (req, done) =>
-      done(null, !req.headers.origin || req.headers.origin === corsOrigin),
+      done(null, !req.headers.origin || origins.includes(req.headers.origin)),
   });
   attachSharedRides(io, features);
   // Room membership is cached, so revalidate recipients before disclosing data.

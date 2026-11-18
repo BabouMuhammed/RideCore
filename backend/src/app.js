@@ -1,4 +1,5 @@
 import { readFeatureSettings } from "./config/features.js";
+import { parseOrigins } from "./config/env.js";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -13,14 +14,17 @@ export function createApp({
   runtimeMode = process.env.NODE_ENV || "development",
   corsOrigin = process.env.CORS_ORIGIN || "http://localhost:3000",
   logging = process.env.NODE_ENV !== "test",
+  trustProxy = Number(process.env.TRUST_PROXY) || 0,
 } = {}) {
   const app = express();
   app.locals.jwtSecret = jwtSecret;
   app.locals.features = features;
   app.locals.runtimeMode = runtimeMode;
   app.disable("x-powered-by");
+  // Behind a hosting proxy, use the client's address for rate limiting.
+  if (trustProxy) app.set("trust proxy", trustProxy);
   app.use(helmet());
-  app.use(cors({ origin: corsOrigin }));
+  app.use(cors({ origin: parseOrigins(corsOrigin) }));
   app.use(express.json({ limit: "32kb" }));
   if (logging) app.use(morgan(":method :status :response-time ms"));
   app.use(
