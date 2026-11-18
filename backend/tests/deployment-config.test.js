@@ -61,6 +61,18 @@ describe("deployment configuration", () => {
     expect(readEnvironment(base).TRUST_PROXY).toBe(0);
   });
 
+  it("reads settings again from already-parsed values, as server.js does", () => {
+    const env = readEnvironment({
+      ...base,
+      OTP_MOCK_DELIVERY: "true",
+      TRUST_PROXY: "1",
+    });
+    expect(readFeatureSettings(env).OTP_MOCK_DELIVERY).toBe(true);
+    expect(readFeatureSettings(readEnvironment(base)).OTP_MOCK_DELIVERY).toBe(
+      false,
+    );
+  });
+
   it("shows mock codes in production only when explicitly enabled", async () => {
     expect(readFeatureSettings({}).OTP_MOCK_DELIVERY).toBe(false);
     expect(

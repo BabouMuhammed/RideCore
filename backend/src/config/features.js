@@ -30,9 +30,11 @@ export const featureEnvironmentSchema = z.object({
   // No SMS provider is connected yet. "true" returns the code in the API
   // response even in production, for demonstration deployments only.
   OTP_MOCK_DELIVERY: z
-    .enum(["true", "false"])
-    .default("false")
-    .transform((value) => value === "true"),
+    .union([
+      z.boolean(),
+      z.enum(["true", "false"]).transform((value) => value === "true"),
+    ])
+    .default(false),
 });
 export function readFeatureSettings(env = process.env) {
   const result = featureEnvironmentSchema.safeParse(env);
