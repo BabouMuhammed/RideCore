@@ -39,11 +39,22 @@ function openDirections(point: Coordinate) {
   );
 }
 
+// Why "Go online" is waiting, and what the driver can do about it.
+export function gpsHint(gps: string) {
+  if (gps === 'starting') return 'Finding your location…';
+  if (gps === 'denied')
+    return 'Location access is off for RideCore. Tap the map where you are, or allow location and tap Use my location. On iPhone: Settings › Privacy & Security › Location Services › Safari Websites.';
+  return 'Your location isn’t available. Tap the map where you are to set your position, then go online.';
+}
+
 export function DriveScreen() {
-  const { controller, gps, state } = useDriver();
+  const { controller, gps, retryGps, state } = useDriver();
   const insets = useSafeAreaInsets();
   const [maps] = useState(() => createMapService());
-  const [planned, setPlanned] = useState<{ rideId: string; points: Coordinate[] } | null>(null);
+  const [planned, setPlanned] = useState<{
+    rideId: string;
+    points: Coordinate[];
+  } | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const { account, ride, requests, location } = state;
   const approved =
@@ -54,7 +65,8 @@ export function DriveScreen() {
 
   // Planned street line for the current trip, fetched once per ride.
   const rideId = active ? ride!._id : null;
-  const route = planned && planned.rideId === rideId ? planned.points : undefined;
+  const route =
+    planned && planned.rideId === rideId ? planned.points : undefined;
   useEffect(() => {
     if (!rideId || !ride) return;
     const abort = new AbortController();
@@ -75,7 +87,11 @@ export function DriveScreen() {
     const list: MapPin[] = [];
     if (location) list.push({ id: 'driver', point: location, label: 'You' });
     if (active && ride) {
-      list.push({ id: 'pickup', point: ride.pickup.location.coordinates, label: 'Pickup' });
+      list.push({
+        id: 'pickup',
+        point: ride.pickup.location.coordinates,
+        label: 'Pickup',
+      });
       list.push({
         id: 'destination',
         point: ride.destination.location.coordinates,
@@ -92,15 +108,14 @@ export function DriveScreen() {
     return list;
   }, [location, active, ride, online, requests]);
 
-  if (state.loading && !account) return <Loading label="Loading your driver account" />;
+  if (state.loading && !account)
+    return <Loading label="Loading your driver account" />;
   if (!approved) return <DriverOnboarding />;
 
   const canPickOnMap = gps !== 'watching';
   const next = active && ride ? nextAction(ride.status) : null;
   const target =
-    ride && ride.status === 'in_progress'
-      ? ride.destination
-      : ride?.pickup;
+    ride && ride.status === 'in_progress' ? ride.destination : ride?.pickup;
 
   return (
     <View style={styles.root}>
@@ -115,7 +130,9 @@ export function DriveScreen() {
         }
       />
       <View style={[styles.status, { top: insets.top + 12 }]}>
-        <View style={[styles.dot, online || active ? styles.dotOn : styles.dotOff]} />
+        <View
+          style={[styles.dot, online || active ? styles.dotOn : styles.dotOff]}
+        />
         <Text variant="label">
           {active ? 'On a ride' : online ? 'Online' : 'Offline'}
         </Text>
@@ -162,7 +179,7 @@ export function DriveScreen() {
             {next && (
               <Button
                 label={next.label}
-               
+
                 loading={state.busy}
                 onPress={() => void controller.advance()}
               />
@@ -172,7 +189,10 @@ export function DriveScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Directions to ${ride.status === 'in_progress' ? 'drop-off' : 'pickup'}`}
                 onPress={() => openDirections(target.location.coordinates)}
-                style={({ pressed }) => [styles.directions, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [
+                  styles.directions,
+                  pressed && { opacity: 0.7 },
+                ]}
               >
                 <Icon name="pin" color={colors.brand} />
                 <View style={{ flex: 1 }}>
@@ -189,9 +209,17 @@ export function DriveScreen() {
               </Pressable>
             )}
             {ride.status === 'in_progress' ? (
-              <ListRow icon="pin" title="Picked up at" subtitle={ride.pickup.address} />
+              <ListRow
+                icon="pin"
+                title="Picked up at"
+                subtitle={ride.pickup.address}
+              />
             ) : (
-              <ListRow icon="pin" title="Drop-off" subtitle={ride.destination.address} />
+              <ListRow
+                icon="pin"
+                title="Drop-off"
+                subtitle={ride.destination.address}
+              />
             )}
             {ride.status !== 'in_progress' && (
               <Button
@@ -206,7 +234,9 @@ export function DriveScreen() {
           <>
             <Text variant="heading">Trip complete</Text>
             <View style={styles.collect}>
-              <Text tone="inverse">Collect from {riderName(ride) ?? 'your rider'}</Text>
+              <Text tone="inverse">
+                Collect from {riderName(ride) ?? 'your rider'}
+              </Text>
               <Text style={styles.collectAmount}>
                 {money(ride.finalFare ?? ride.estimatedFare, ride.currency)}
               </Text>
@@ -214,7 +244,9 @@ export function DriveScreen() {
             <RateRider
               name={riderName(ride)}
               busy={state.busy}
-              onRate={(rating, comment) => void controller.rate(rating, comment)}
+              onRate={(rating, comment) =>
+                void controller.rate(rating, comment)
+              }
             />
             <Button
               label="Skip and close"
@@ -266,11 +298,16 @@ export function DriveScreen() {
               <View style={styles.hint}>
                 <Icon name="pin" color={colors.brand} />
                 <Text variant="caption" style={{ flex: 1 }}>
-                  {gps === 'starting'
-                    ? 'Finding your location…'
-                    : 'Location is off. Tap the map where you are to set your position.'}
+                  {gpsHint(gps)}
                 </Text>
               </View>
+            )}
+            {!location && (gps === 'denied' || gps === 'unavailable') && (
+              <Button
+                label="Use my location"
+                variant="secondary"
+                onPress={retryGps}
+              />
             )}
             {location && canPickOnMap && (
               <Text variant="caption" tone="secondary">
@@ -279,7 +316,7 @@ export function DriveScreen() {
             )}
             <Button
               label="Go online"
-             
+
               loading={state.busy}
               disabled={!location}
               onPress={() => void controller.goOnline()}
@@ -325,8 +362,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontFamily: fonts.semibold, fontSize: 20, lineHeight: 26, color: colors.text },
-  fare: { fontFamily: fonts.bold, fontSize: 17, lineHeight: 22, color: colors.text },
+  avatarText: {
+    fontFamily: fonts.semibold,
+    fontSize: 20,
+    lineHeight: 26,
+    color: colors.text,
+  },
+  fare: {
+    fontFamily: fonts.bold,
+    fontSize: 17,
+    lineHeight: 22,
+    color: colors.text,
+  },
   directions: {
     flexDirection: 'row',
     alignItems: 'center',

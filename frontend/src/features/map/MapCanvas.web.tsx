@@ -13,8 +13,14 @@ const carSvg =
   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#191919" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>';
 
 export function MapCanvas(props: MapCanvasProps) {
-  const { center, pins, route, onSelect, onCenterChange, bottomInset = 0 } =
-    props;
+  const {
+    center,
+    pins,
+    route,
+    onSelect,
+    onCenterChange,
+    bottomInset = 0,
+  } = props;
   const host = useRef<HTMLDivElement>(null),
     map = useRef<maplibregl.Map | null>(null);
   const select = useRef(onSelect);
@@ -46,7 +52,11 @@ export function MapCanvas(props: MapCanvasProps) {
           new maplibregl.AttributionControl({ compact: true }),
           'top-right',
         );
-        instance.on('load', () => setReady(true));
+        instance.on('load', () => {
+          setReady(true);
+          // A tile that failed during loading doesn't make the map unusable.
+          setFailed(false);
+        });
         instance.on('click', (event) =>
           select.current?.([event.lngLat.lng, event.lngLat.lat]),
         );
@@ -59,8 +69,9 @@ export function MapCanvas(props: MapCanvasProps) {
         });
         // Individual tile errors are normal on a slow link; only a style
         // failure before the first load means the map is unusable.
-        instance.on('error', () => {
-          if (!instance?.loaded()) setFailed(true);
+        instance.on('error', (event) => {
+          const tileError = 'tile' in event || 'sourceId' in event;
+          if (!tileError && !instance?.loaded()) setFailed(true);
         });
       } catch {
         setFailed(true);
@@ -156,14 +167,16 @@ export function MapCanvas(props: MapCanvasProps) {
     });
   }, [bottomInset, ready]);
   return (
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.neutral }]}>
+    <View
+      style={[StyleSheet.absoluteFill, { backgroundColor: colors.neutral }]}
+    >
       {createElement('div', {
         ref: host,
         style: { position: 'absolute', inset: 0 },
         'aria-label': 'RideCore street map',
       })}
       {failed && (
-        <View style={{ padding: 24, paddingTop: 80 }}>
+        <View pointerEvents="none" style={{ padding: 24, paddingTop: 80 }}>
           <Text>The map could not load. Check your connection.</Text>
         </View>
       )}
