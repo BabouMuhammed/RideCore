@@ -10,3 +10,6 @@ ios/
 !.env.example
 *.jks
 *.keystore
+
+# Copied from maplibre-gl on install (scripts/copy-map-worker.mjs)
+public/maplibre-gl-worker.mjs

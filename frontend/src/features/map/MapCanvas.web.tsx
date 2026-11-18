@@ -1,11 +1,17 @@
 import { createElement, useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+
 import { View, StyleSheet } from 'react-native';
 import { Text } from '../../components/ui/Text';
 import { colors } from '../../theme/tokens';
 import { osmStyle } from './osmStyle';
 import { cameraKey, type MapCanvasProps } from './MapCanvas.types';
+
+// Vector tiles are parsed in a Web Worker. The bundle can't locate MapLibre's
+// worker on its own, so it's served from the site root (copied there by
+// scripts/copy-map-worker.mjs on install).
+maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs');
 
 // Browser adapter (PC review and the public trip viewer). Native uses
 // MapLibre React Native with the same OpenStreetMap style.

@@ -18,7 +18,8 @@
     "verify:backend-contract": "node scripts/verify-phase2-contract.mjs",
     "export:web": "expo export --platform web",
     "verify:rider": "node scripts/verify-rider-journey.mjs",
-    "verify:admin": "node scripts/verify-admin.mjs"
+    "verify:admin": "node scripts/verify-admin.mjs",
+    "postinstall": "node scripts/copy-map-worker.mjs"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "5.2.14",
