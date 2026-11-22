@@ -45,8 +45,8 @@ describe("foundation and pricing", () => {
     const fare = estimateFare(input);
     expect(fare.distance).toBeCloseTo(2.62, 1);
     expect(fare.estimatedFare).toBe(
-      Math.round((75 + fare.distance * 25 + fare.estimatedDuration * 5) * 100) /
-        100,
+      Math.round((75 + fare.distance * 25 + fare.estimatedDuration * 5) / 5) *
+        5,
     );
     expect(fare.distanceMethod).toBe("haversine_straight_line");
   });
@@ -59,7 +59,7 @@ describe("foundation and pricing", () => {
       destination: input.pickup,
       vehicleType,
     });
-    expect(base.estimatedFare).toBe(75 * multiplier);
+    expect(base.estimatedFare).toBe(Math.round((75 * multiplier) / 5) * 5);
   });
   it("rejects invalid coordinates at API and service boundaries", () => {
     const bad = { ...input, pickup: stop([181, 91]) };

@@ -5,5 +5,6 @@ export const pricing = Object.freeze({
   perKm: 25,
   perMinute: 5,
   averageSpeedKmh: 30,
+  fareRoundingIncrement: 5,
   multipliers: Object.freeze({ economy: 1, comfort: 1.3, xl: 1.6 }),
 });

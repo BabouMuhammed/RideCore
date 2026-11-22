@@ -25,14 +25,14 @@ export function estimateFare({ pickup, destination, vehicleType }) {
   const distance =
     6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - Math.min(1, a)));
   const estimatedDuration = (distance / pricing.averageSpeedKmh) * 60;
+  const rawFare =
+    (pricing.baseFare +
+      distance * pricing.perKm +
+      estimatedDuration * pricing.perMinute) *
+    pricing.multipliers[vehicleType];
   const estimatedFare =
-    Math.round(
-      (pricing.baseFare +
-        distance * pricing.perKm +
-        estimatedDuration * pricing.perMinute) *
-        pricing.multipliers[vehicleType] *
-        100,
-    ) / 100;
+    Math.round(rawFare / pricing.fareRoundingIncrement) *
+    pricing.fareRoundingIncrement;
   return {
     distance,
     estimatedDuration,
